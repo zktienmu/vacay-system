@@ -20,12 +20,8 @@ export const GET = withAuth(
     try {
       const { searchParams } = new URL(req.url);
       const showAll = searchParams.get("all") === "true";
-      const status = searchParams.get("status") as
-        | "pending"
-        | "approved"
-        | "rejected"
-        | "cancelled"
-        | null;
+      const statusParam = searchParams.get("status");
+      const validStatuses = ["pending", "approved", "rejected", "cancelled"];
 
       const filters: {
         employee_id?: string;
@@ -39,14 +35,15 @@ export const GET = withAuth(
         filters.employee_id = session.employee_id;
       }
 
-      if (status) {
-        filters.status = status;
+      if (statusParam && validStatuses.includes(statusParam)) {
+        filters.status = statusParam as "pending" | "approved" | "rejected" | "cancelled";
       }
 
       const startDate = searchParams.get("start_date");
       const endDate = searchParams.get("end_date");
-      if (startDate) filters.start_date = startDate;
-      if (endDate) filters.end_date = endDate;
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (startDate && dateRegex.test(startDate)) filters.start_date = startDate;
+      if (endDate && dateRegex.test(endDate)) filters.end_date = endDate;
 
       const requests = await getLeaveRequests(filters);
       return NextResponse.json({ success: true, data: requests });

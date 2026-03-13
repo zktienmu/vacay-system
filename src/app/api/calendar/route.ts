@@ -84,7 +84,6 @@ export async function GET(
       .gte("end_date", monthStartStr);
 
     if (error) {
-      console.error("[Calendar API] Failed to fetch leave requests", error);
       return NextResponse.json(
         { success: false, error: "Failed to fetch calendar events" },
         { status: 500 },
@@ -122,8 +121,7 @@ export async function GET(
     });
 
     return NextResponse.json({ success: true, data: events });
-  } catch (error) {
-    console.error("[Calendar API] Unexpected error", error);
+  } catch {
     return NextResponse.json(
       { success: false, error: "Internal server error" },
       { status: 500 },

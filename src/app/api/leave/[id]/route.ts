@@ -16,6 +16,8 @@ import {
   onLeaveRequestCancelled,
 } from "@/lib/integrations/hooks";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const PATCH = withAuth(
   async (
     req: NextRequest,
@@ -24,6 +26,14 @@ export const PATCH = withAuth(
   ) => {
     try {
       const { id } = await ctx.params;
+
+      if (!UUID_REGEX.test(id)) {
+        return NextResponse.json(
+          { success: false, error: "Invalid request ID" },
+          { status: 400 },
+        );
+      }
+
       const body = await req.json();
 
       const leaveRequest = await getLeaveRequestById(id);

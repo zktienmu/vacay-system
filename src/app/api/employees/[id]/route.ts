@@ -8,6 +8,8 @@ import {
   insertAuditLog,
 } from "@/lib/supabase/queries";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const PATCH = withAdmin(
   async (
     req: NextRequest,
@@ -16,6 +18,14 @@ export const PATCH = withAdmin(
   ) => {
     try {
       const { id } = await ctx.params;
+
+      if (!UUID_REGEX.test(id)) {
+        return NextResponse.json(
+          { success: false, error: "Invalid employee ID" },
+          { status: 400 },
+        );
+      }
+
       const body = await req.json();
       const parsed = updateEmployeeSchema.safeParse(body);
 

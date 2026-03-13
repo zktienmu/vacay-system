@@ -6,9 +6,24 @@ import { sessionOptions } from "@/lib/auth/session";
 import { verifySiweMessage } from "@/lib/auth/siwe";
 import { siweVerifySchema } from "@/lib/leave/validation";
 import { getEmployeeByWallet, insertAuditLog } from "@/lib/supabase/queries";
+import { authRateLimiter, getClientIp } from "@/lib/security/rate-limit";
+
+// Nonce TTL: 5 minutes
+const NONCE_TTL_MS = 5 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+
   try {
+    // Rate limit: auth endpoints
+    const limit = authRateLimiter.check(`verify:${ip}`);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Too many requests" },
+        { status: 429 },
+      );
+    }
+
     const body = await req.json();
     const parsed = siweVerifySchema.safeParse(body);
 
@@ -33,15 +48,70 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const walletAddress = await verifySiweMessage(
-      message,
-      signature,
-      session.nonce,
-    );
+    // Enforce nonce TTL
+    if (
+      !session.nonce_issued_at ||
+      Date.now() - session.nonce_issued_at > NONCE_TTL_MS
+    ) {
+      // Clear the expired nonce
+      session.nonce = undefined;
+      session.nonce_issued_at = undefined;
+      await session.save();
+
+      return NextResponse.json(
+        { success: false, error: "Nonce expired. Please request a new one." },
+        { status: 400 },
+      );
+    }
+
+    let walletAddress: string;
+    try {
+      walletAddress = await verifySiweMessage(
+        message,
+        signature,
+        session.nonce,
+      );
+    } catch {
+      // Invalidate nonce after failed verification (single-use)
+      session.nonce = undefined;
+      session.nonce_issued_at = undefined;
+      await session.save();
+
+      // Log failed login attempt
+      await insertAuditLog({
+        actor_id: "unknown",
+        action: "auth.login_failed",
+        resource_type: "auth",
+        resource_id: "unknown",
+        details: { reason: "SIWE verification failed" },
+        ip_address: ip,
+      }).catch(() => {});
+
+      return NextResponse.json(
+        { success: false, error: "Signature verification failed" },
+        { status: 400 },
+      );
+    }
+
+    // Invalidate nonce after successful use (single-use)
+    session.nonce = undefined;
+    session.nonce_issued_at = undefined;
 
     const employee = await getEmployeeByWallet(walletAddress);
 
     if (!employee) {
+      await session.save();
+
+      // Log unregistered wallet attempt
+      await insertAuditLog({
+        actor_id: "unknown",
+        action: "auth.login_failed",
+        resource_type: "auth",
+        resource_id: "unknown",
+        details: { reason: "Wallet not registered" },
+        ip_address: ip,
+      }).catch(() => {});
+
       return NextResponse.json(
         { success: false, error: "Not registered" },
         { status: 403 },
@@ -52,7 +122,6 @@ export async function POST(req: NextRequest) {
     session.wallet_address = employee.wallet_address;
     session.name = employee.name;
     session.role = employee.role;
-    session.nonce = undefined;
     await session.save();
 
     await insertAuditLog({
@@ -61,8 +130,7 @@ export async function POST(req: NextRequest) {
       resource_type: "employee",
       resource_id: employee.id,
       details: { wallet_address: employee.wallet_address },
-      ip_address:
-        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+      ip_address: ip,
     }).catch(() => {
       // Audit log failure should not break login
     });
@@ -76,22 +144,7 @@ export async function POST(req: NextRequest) {
         role: employee.role,
       },
     });
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Verification failed";
-
-    // Return specific SIWE errors to the client for UX
-    if (
-      message.includes("mismatch") ||
-      message.includes("Signature") ||
-      message.includes("Expired")
-    ) {
-      return NextResponse.json(
-        { success: false, error: message },
-        { status: 400 },
-      );
-    }
-
+  } catch {
     return NextResponse.json(
       { success: false, error: "Verification failed" },
       { status: 500 },

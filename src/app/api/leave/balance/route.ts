@@ -21,10 +21,21 @@ export const GET = withAuth(
   ) => {
     try {
       const { searchParams } = new URL(req.url);
-      const targetEmployeeId =
-        session.role === "admin"
-          ? searchParams.get("employee_id") ?? session.employee_id
-          : session.employee_id;
+      const employeeIdParam = searchParams.get("employee_id");
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      let targetEmployeeId: string;
+      if (session.role === "admin" && employeeIdParam) {
+        if (!uuidRegex.test(employeeIdParam)) {
+          return NextResponse.json(
+            { success: false, error: "Invalid employee ID" },
+            { status: 400 },
+          );
+        }
+        targetEmployeeId = employeeIdParam;
+      } else {
+        targetEmployeeId = session.employee_id;
+      }
 
       const employee = await getEmployeeById(targetEmployeeId);
       if (!employee) {

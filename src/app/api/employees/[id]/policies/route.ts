@@ -9,6 +9,8 @@ import {
   insertAuditLog,
 } from "@/lib/supabase/queries";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const GET = withAdmin(
   async (
     _req: NextRequest,
@@ -17,6 +19,13 @@ export const GET = withAdmin(
   ) => {
     try {
       const { id } = await ctx.params;
+
+      if (!UUID_REGEX.test(id)) {
+        return NextResponse.json(
+          { success: false, error: "Invalid employee ID" },
+          { status: 400 },
+        );
+      }
 
       const employee = await getEmployeeById(id);
       if (!employee) {
@@ -45,6 +54,14 @@ export const PUT = withAdmin(
   ) => {
     try {
       const { id } = await ctx.params;
+
+      if (!UUID_REGEX.test(id)) {
+        return NextResponse.json(
+          { success: false, error: "Invalid employee ID" },
+          { status: 400 },
+        );
+      }
+
       const body = await req.json();
       const parsed = upsertPolicySchema.safeParse(body);
 

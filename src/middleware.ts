@@ -3,20 +3,57 @@ import { NextRequest, NextResponse } from "next/server";
 const PUBLIC_API_ROUTES = ["/api/auth/nonce", "/api/auth/verify"];
 const PUBLIC_PAGES = ["/login"];
 const SESSION_COOKIE = "vaca_session";
+const STATE_CHANGING_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hasSession = req.cookies.has(SESSION_COOKIE);
 
+  // CSRF / Origin check on state-changing requests
+  if (STATE_CHANGING_METHODS.has(req.method)) {
+    const origin = req.headers.get("origin");
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+    if (appUrl && origin) {
+      const expectedOrigin = new URL(appUrl).origin;
+      if (origin !== expectedOrigin) {
+        return NextResponse.json(
+          { success: false, error: "Forbidden" },
+          { status: 403 },
+        );
+      }
+    }
+  }
+
   // Security headers for all responses
   const response = getResponse(req, pathname, hasSession);
+
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set("X-XSS-Protection", "1; mode=block");
   response.headers.set(
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()",
+  );
+  response.headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      // Next.js requires unsafe-eval in dev; scripts from WalletConnect
+      "script-src 'self' 'unsafe-inline' https://*.walletconnect.com https://*.reown.com",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.walletconnect.com https://*.reown.com wss://*.walletconnect.com wss://*.reown.com https://*.supabase.co",
+      "frame-src 'self' https://*.walletconnect.com https://*.reown.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; "),
+  );
+  response.headers.set(
+    "Strict-Transport-Security",
+    "max-age=31536000; includeSubDomains",
   );
 
   return response;

@@ -5,6 +5,7 @@ export interface SessionData {
   name: string;
   role: "admin" | "employee";
   nonce?: string;
+  nonce_issued_at?: number; // Unix timestamp (ms) for nonce TTL enforcement
 }
 
 // === Database Models ===
