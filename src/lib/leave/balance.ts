@@ -1,0 +1,101 @@
+import { LeaveType, LeaveBalance } from "@/types";
+import {
+  getLeavePolicies,
+  getApprovedDaysInPeriod,
+} from "@/lib/supabase/queries";
+
+export function calculateAnniversaryPeriod(
+  startDate: string,
+  referenceDate?: string,
+): { periodStart: string; periodEnd: string } {
+  const ref = referenceDate ? new Date(referenceDate) : new Date();
+  const start = new Date(startDate);
+
+  // Find the most recent anniversary date on or before the reference date
+  let anniversaryYear = ref.getFullYear();
+  const anniversaryThisYear = new Date(
+    anniversaryYear,
+    start.getMonth(),
+    start.getDate(),
+  );
+
+  if (anniversaryThisYear > ref) {
+    anniversaryYear -= 1;
+  }
+
+  const periodStart = new Date(
+    anniversaryYear,
+    start.getMonth(),
+    start.getDate(),
+  );
+  const periodEnd = new Date(
+    anniversaryYear + 1,
+    start.getMonth(),
+    start.getDate() - 1,
+  );
+
+  return {
+    periodStart: formatDate(periodStart),
+    periodEnd: formatDate(periodEnd),
+  };
+}
+
+export function calculateWorkingDays(
+  startDate: string,
+  endDate: string,
+): number {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (end < start) return 0;
+
+  let count = 0;
+  const current = new Date(start);
+
+  while (current <= end) {
+    const day = current.getDay();
+    // Monday=1, Tuesday=2, ..., Friday=5. Exclude Saturday=6 and Sunday=0.
+    if (day !== 0 && day !== 6) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
+}
+
+export async function getLeaveBalance(
+  employeeId: string,
+  leaveType: LeaveType,
+  employeeStartDate: string,
+): Promise<LeaveBalance> {
+  const policies = await getLeavePolicies(employeeId);
+  const policy = policies.find((p) => p.leave_type === leaveType);
+
+  const totalDays = policy?.total_days ?? 0;
+
+  const { periodStart, periodEnd } = calculateAnniversaryPeriod(
+    employeeStartDate,
+  );
+
+  const usedDays = await getApprovedDaysInPeriod(
+    employeeId,
+    leaveType,
+    periodStart,
+    periodEnd,
+  );
+
+  return {
+    leave_type: leaveType,
+    total_days: totalDays,
+    used_days: usedDays,
+    remaining_days: totalDays - usedDays,
+  };
+}
+
+function formatDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
