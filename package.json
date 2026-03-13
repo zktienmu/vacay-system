@@ -9,15 +9,32 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.20",
+    "@fullcalendar/daygrid": "^6.1.20",
+    "@fullcalendar/react": "^6.1.20",
+    "@headlessui/react": "^2.2.9",
+    "@reown/appkit": "^1.8.19",
+    "@reown/appkit-adapter-wagmi": "^1.8.19",
+    "@slack/web-api": "^7.15.0",
+    "@supabase/supabase-js": "^2.99.1",
+    "@tanstack/react-query": "^5.90.21",
+    "date-fns": "^4.1.0",
+    "googleapis": "^171.4.0",
+    "iron-session": "^8.0.4",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "siwe": "^3.0.0",
+    "viem": "^2.47.2",
+    "wagmi": "^3.5.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@upstash/ratelimit": "^2.0.8",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
