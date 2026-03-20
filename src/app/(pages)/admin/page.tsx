@@ -9,11 +9,10 @@ import { useLeaveRequests } from "@/hooks/useLeaveRequests";
 import LeaveStatusBadge from "@/components/LeaveStatusBadge";
 import LeaveTypeIcon from "@/components/LeaveTypeIcon";
 import { useTranslation } from "@/lib/i18n/context";
-import type { ApiResponse } from "@/types";
 
 export default function AdminReviewPage() {
   const { session } = useSession();
-  const { requests, isLoading, refetch } = useLeaveRequests(true);
+  const { requests, isLoading } = useLeaveRequests(true);
   const { t, locale } = useTranslation();
 
   const dateFnsLocale = locale === "zh-TW" ? zhTWLocale : undefined;
@@ -56,31 +55,6 @@ export default function AdminReviewPage() {
         </div>
       </div>
     );
-  }
-
-  async function handleAction(id: string, status: "approved" | "rejected") {
-    const confirmMsg =
-      status === "approved"
-        ? t("admin.confirmApprove")
-        : t("admin.confirmReject");
-
-    if (!window.confirm(confirmMsg)) return;
-
-    try {
-      const res = await fetch(`/api/leave/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      const json: ApiResponse = await res.json();
-      if (!json.success) {
-        alert(json.error || t("admin.failedUpdate"));
-        return;
-      }
-      refetch();
-    } catch {
-      alert(t("admin.failedUpdate"));
-    }
   }
 
   function formatDays(n: number) {
@@ -129,54 +103,36 @@ export default function AdminReviewPage() {
                     <th className="px-6 py-3">{t("admin.dates")}</th>
                     <th className="px-6 py-3">{t("admin.daysCol")}</th>
                     <th className="px-6 py-3">{t("admin.notesCol")}</th>
-                    <th className="px-6 py-3">{t("admin.actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {pendingRequests.map((req) => (
-                    <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <tr key={req.id} className="group cursor-pointer transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-900/10">
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                        <Link
-                          href={`/admin/review/${req.id}`}
-                          className="hover:text-blue-600 dark:hover:text-blue-400"
-                        >
+                        <Link href={`/admin/review/${req.id}`} className="block">
                           {req.employee?.name || t("common.unknown")}
                         </Link>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
-                        <LeaveTypeIcon type={req.leave_type} showLabel />
+                        <Link href={`/admin/review/${req.id}`} className="block">
+                          <LeaveTypeIcon type={req.leave_type} showLabel />
+                        </Link>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {formatDate(req.start_date, "MMM d")} -{" "}
-                        {formatDate(req.end_date, "MMM d, yyyy")}
+                        <Link href={`/admin/review/${req.id}`} className="block">
+                          {formatDate(req.start_date, "MMM d")} -{" "}
+                          {formatDate(req.end_date, "MMM d, yyyy")}
+                        </Link>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {req.days}
+                        <Link href={`/admin/review/${req.id}`} className="block">
+                          {req.days}
+                        </Link>
                       </td>
                       <td className="max-w-xs truncate px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                        {req.notes || "-"}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleAction(req.id, "approved")}
-                            className="rounded-lg bg-green-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-green-600"
-                          >
-                            {t("admin.approve")}
-                          </button>
-                          <button
-                            onClick={() => handleAction(req.id, "rejected")}
-                            className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600"
-                          >
-                            {t("admin.reject")}
-                          </button>
-                          <Link
-                            href={`/admin/review/${req.id}`}
-                            className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                          >
-                            {t("admin.details")}
-                          </Link>
-                        </div>
+                        <Link href={`/admin/review/${req.id}`} className="block">
+                          {req.notes || "-"}
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -187,14 +143,15 @@ export default function AdminReviewPage() {
             {/* Mobile cards */}
             <div className="divide-y divide-gray-100 lg:hidden dark:divide-gray-700">
               {pendingRequests.map((req) => (
-                <div key={req.id} className="p-4">
+                <Link
+                  key={req.id}
+                  href={`/admin/review/${req.id}`}
+                  className="block p-4 transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
+                >
                   <div className="flex items-center justify-between">
-                    <Link
-                      href={`/admin/review/${req.id}`}
-                      className="text-sm font-medium text-gray-900 hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400"
-                    >
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {req.employee?.name || t("common.unknown")}
-                    </Link>
+                    </span>
                     <LeaveTypeIcon type={req.leave_type} showLabel />
                   </div>
                   <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -206,27 +163,7 @@ export default function AdminReviewPage() {
                       {req.notes}
                     </p>
                   )}
-                  <div className="mt-3 flex items-center gap-2">
-                    <button
-                      onClick={() => handleAction(req.id, "approved")}
-                      className="rounded-lg bg-green-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-green-600"
-                    >
-                      {t("admin.approve")}
-                    </button>
-                    <button
-                      onClick={() => handleAction(req.id, "rejected")}
-                      className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600"
-                    >
-                      {t("admin.reject")}
-                    </button>
-                    <Link
-                      href={`/admin/review/${req.id}`}
-                      className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
-                      {t("admin.details")}
-                    </Link>
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
