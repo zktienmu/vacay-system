@@ -9,6 +9,7 @@ import {
   getEmployeeById,
   insertAuditLog,
 } from "@/lib/supabase/queries";
+import { getClientIp } from "@/lib/security/rate-limit";
 import { onLeaveRequestCreated } from "@/lib/integrations/hooks";
 
 export const GET = withAuth(
@@ -31,7 +32,12 @@ export const GET = withAuth(
       } = {};
 
       // Only admins and managers can view all requests
-      if (!(showAll && (session.role === "admin" || session.is_manager))) {
+      // Managers only see their own department's requests
+      if (showAll && session.role === "admin") {
+        // Admin sees all
+      } else if (showAll && session.is_manager) {
+        // Manager sees own department — filter client-side after fetch
+      } else {
         filters.employee_id = session.employee_id;
       }
 
@@ -45,7 +51,19 @@ export const GET = withAuth(
       if (startDate && dateRegex.test(startDate)) filters.start_date = startDate;
       if (endDate && dateRegex.test(endDate)) filters.end_date = endDate;
 
-      const requests = await getLeaveRequests(filters);
+      let requests = await getLeaveRequests(filters);
+
+      // Manager department filter: fetch all then filter by department
+      if (showAll && session.is_manager && session.role !== "admin") {
+        const employeeIds = new Set<string>();
+        const { data: deptEmployees } = await (await import("@/lib/supabase/client")).supabase
+          .from("employees")
+          .select("id")
+          .eq("department", session.department);
+        (deptEmployees ?? []).forEach((e: { id: string }) => employeeIds.add(e.id));
+        requests = requests.filter((r) => employeeIds.has(r.employee_id));
+      }
+
       return NextResponse.json({ success: true, data: requests });
     } catch {
       return NextResponse.json(
@@ -105,7 +123,7 @@ export const POST = withAuth(
         return NextResponse.json(
           {
             success: false,
-            error: "連續請假 3 天以上需提供交接事項網址",
+            error: "Handover document URL is required for leaves of 3+ working days",
           },
           { status: 400 },
         );
@@ -140,6 +158,12 @@ export const POST = withAuth(
 
       // Validate delegate exists if provided
       if (delegate_id) {
+        if (delegate_id === session.employee_id) {
+          return NextResponse.json(
+            { success: false, error: "Cannot delegate to yourself" },
+            { status: 400 },
+          );
+        }
         const delegate = await getEmployeeById(delegate_id);
         if (!delegate) {
           return NextResponse.json(
@@ -167,8 +191,7 @@ export const POST = withAuth(
         resource_type: "leave_request",
         resource_id: leaveRequest.id,
         details: { leave_type, start_date, end_date, days },
-        ip_address:
-          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        ip_address: getClientIp(req),
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       // Fire-and-forget: notify admins via Slack

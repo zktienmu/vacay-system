@@ -8,6 +8,8 @@ export function mockSession(overrides: Partial<SessionData> = {}): SessionData {
     wallet_address: '0x1234567890abcdef1234567890abcdef12345678',
     name: 'Test User',
     role: 'employee',
+    department: 'engineering',
+    is_manager: false,
     ...overrides,
   }
 }
@@ -17,6 +19,8 @@ export function mockAdminSession(overrides: Partial<SessionData> = {}): SessionD
     employee_id: 'admin-001',
     name: 'Admin User',
     role: 'admin',
+    department: 'admin',
+    is_manager: false,
     ...overrides,
   })
 }
@@ -27,6 +31,8 @@ export function mockUnauthenticatedSession(): SessionData {
     wallet_address: '',
     name: '',
     role: 'employee',
+    department: 'engineering',
+    is_manager: false,
   }
 }
 
@@ -40,6 +46,8 @@ export function mockEmployee(overrides: Partial<Employee> = {}): Employee {
     slack_user_id: 'U12345',
     start_date: '2024-01-15',
     role: 'employee',
+    department: 'engineering',
+    is_manager: false,
     created_at: '2024-01-15T00:00:00Z',
     updated_at: '2024-01-15T00:00:00Z',
     ...overrides,
@@ -57,6 +65,7 @@ export function mockLeaveRequest(overrides: Partial<LeaveRequest> = {}): LeaveRe
     end_date: '2026-04-03',
     days: 3,
     delegate_id: null,
+    handover_url: null,
     notes: null,
     status: 'pending',
     reviewed_by: null,

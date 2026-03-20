@@ -7,9 +7,11 @@ import {
 } from "@/lib/leave/validation";
 import {
   getLeaveRequestById,
+  getEmployeeById,
   updateLeaveRequest,
   insertAuditLog,
 } from "@/lib/supabase/queries";
+import { getClientIp } from "@/lib/security/rate-limit";
 import {
   onLeaveRequestApproved,
   onLeaveRequestRejected,
@@ -82,8 +84,7 @@ export const PATCH = withAuth(
           resource_id: id,
           details: { previous_status: leaveRequest.status },
           ip_address:
-            req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-            null,
+            getClientIp(req),
         }).catch((err) => console.error("[AuditLog] Failed:", err));
 
         // Fire-and-forget: clean up calendar event
@@ -98,6 +99,17 @@ export const PATCH = withAuth(
           { success: false, error: "Forbidden" },
           { status: 403 },
         );
+      }
+
+      // Managers can only approve/reject within their own department
+      if (session.role !== "admin" && session.is_manager) {
+        const requestEmployee = await getEmployeeById(leaveRequest.employee_id);
+        if (requestEmployee?.department !== session.department) {
+          return NextResponse.json(
+            { success: false, error: "Forbidden" },
+            { status: 403 },
+          );
+        }
       }
 
       const parsed = updateLeaveStatusSchema.safeParse(body);
@@ -136,7 +148,7 @@ export const PATCH = withAuth(
           leave_type: leaveRequest.leave_type,
         },
         ip_address:
-          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+          getClientIp(req),
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       // Fire-and-forget: Slack + Google Calendar integrations

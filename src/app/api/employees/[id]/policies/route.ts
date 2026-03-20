@@ -8,6 +8,7 @@ import {
   upsertLeavePolicy,
   insertAuditLog,
 } from "@/lib/supabase/queries";
+import { getClientIp } from "@/lib/security/rate-limit";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -105,8 +106,7 @@ export const PUT = withAdmin(
             total_days: p.total_days,
           })),
         },
-        ip_address:
-          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        ip_address: getClientIp(req),
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       return NextResponse.json({ success: true, data: results });

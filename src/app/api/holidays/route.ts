@@ -7,6 +7,7 @@ import {
   createPublicHoliday,
   insertAuditLog,
 } from "@/lib/supabase/queries";
+import { getClientIp } from "@/lib/security/rate-limit";
 
 export const GET = withAuth(
   async (
@@ -69,8 +70,7 @@ export const POST = withAdmin(
         resource_type: "public_holiday",
         resource_id: holiday.id,
         details: { name: holiday.name, date: holiday.date },
-        ip_address:
-          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        ip_address: getClientIp(req),
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       return NextResponse.json(

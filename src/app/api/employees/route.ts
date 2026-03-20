@@ -7,6 +7,7 @@ import {
   createEmployee,
   insertAuditLog,
 } from "@/lib/supabase/queries";
+import { getClientIp } from "@/lib/security/rate-limit";
 
 export const GET = withAdmin(
   async (
@@ -61,8 +62,7 @@ export const POST = withAdmin(
         resource_type: "employee",
         resource_id: employee.id,
         details: { name: employee.name, role: employee.role },
-        ip_address:
-          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        ip_address: getClientIp(req),
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       return NextResponse.json(

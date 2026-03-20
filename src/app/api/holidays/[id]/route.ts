@@ -5,6 +5,7 @@ import {
   deletePublicHoliday,
   insertAuditLog,
 } from "@/lib/supabase/queries";
+import { getClientIp } from "@/lib/security/rate-limit";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -32,8 +33,7 @@ export const DELETE = withAdmin(
         resource_type: "public_holiday",
         resource_id: id,
         details: null,
-        ip_address:
-          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        ip_address: getClientIp(req),
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       return NextResponse.json({ success: true });

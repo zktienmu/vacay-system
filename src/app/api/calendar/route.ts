@@ -62,10 +62,9 @@ export async function GET(
     const monthStartStr = format(monthStart, "yyyy-MM-dd");
     const monthEndStr = format(monthEnd, "yyyy-MM-dd");
 
-    // Fetch all approved leave requests that overlap with the month.
-    // A leave overlaps with [monthStart, monthEnd] when:
-    //   request.start_date <= monthEnd AND request.end_date >= monthStart
-    const { data: requests, error } = await supabase
+    // Fetch approved leave requests that overlap with the month,
+    // scoped by role: admins see all, managers see own department, employees see own.
+    let query = supabase
       .from("leave_requests")
       .select(
         `
@@ -76,12 +75,19 @@ export async function GET(
         end_date,
         days,
         status,
-        employees!leave_requests_employee_id_fkey ( name )
+        employees!leave_requests_employee_id_fkey ( name, department )
       `,
       )
       .eq("status", "approved")
       .lte("start_date", monthEndStr)
       .gte("end_date", monthStartStr);
+
+    // Non-admin, non-manager employees only see their own leaves
+    if (session.role !== "admin" && !session.is_manager) {
+      query = query.eq("employee_id", session.employee_id);
+    }
+
+    const { data: requests, error } = await query;
 
     if (error) {
       return NextResponse.json(
@@ -90,7 +96,17 @@ export async function GET(
       );
     }
 
-    const events: CalendarEvent[] = (requests ?? []).map((row) => {
+    // Manager: filter to own department only
+    let filteredRequests = requests ?? [];
+    if (session.role !== "admin" && session.is_manager) {
+      filteredRequests = filteredRequests.filter((row) => {
+        const emp = row.employees as { name: string; department: string } | { name: string; department: string }[] | null;
+        const dept = Array.isArray(emp) ? emp[0]?.department : emp?.department;
+        return dept === session.department;
+      });
+    }
+
+    const events: CalendarEvent[] = filteredRequests.map((row) => {
       const leaveType = row.leave_type as LeaveType;
       // employees is the joined data — could be an object or array
       const employeeData = row.employees as

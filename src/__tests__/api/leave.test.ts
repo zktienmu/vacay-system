@@ -240,6 +240,7 @@ describe('POST /api/leave', () => {
         leave_type: 'annual',
         start_date: '2026-04-06',
         end_date: '2026-04-08',
+        handover_url: 'https://docs.google.com/handover',
       }),
     })
     const res = await POST(req, { params: Promise.resolve({}) })
@@ -277,6 +278,7 @@ describe('POST /api/leave', () => {
         leave_type: 'unpaid',
         start_date: '2026-04-06',
         end_date: '2026-04-10',
+        handover_url: 'https://docs.google.com/handover',
       }),
     })
     const res = await POST(req, { params: Promise.resolve({}) })
@@ -296,6 +298,7 @@ describe('POST /api/leave', () => {
         leave_type: 'official',
         start_date: '2026-04-06',
         end_date: '2026-04-10',
+        handover_url: 'https://docs.google.com/handover',
       }),
     })
     const res = await POST(req, { params: Promise.resolve({}) })
@@ -312,6 +315,7 @@ describe('POST /api/leave', () => {
         leave_type: 'annual',
         start_date: '2026-04-06',
         end_date: '2026-04-10', // 5 working days but only 1 remaining
+        handover_url: 'https://docs.google.com/handover',
       }),
     })
     const res = await POST(req, { params: Promise.resolve({}) })

@@ -36,10 +36,13 @@ export function proxy(req: NextRequest) {
     const ip = getClientIp(req);
     const limit = apiRateLimiter.check(`api:${ip}`);
     if (!limit.allowed) {
-      return NextResponse.json(
+      const retryAfter = Math.ceil((limit.resetAt - Date.now()) / 1000);
+      const res = NextResponse.json(
         { success: false, error: "Too many requests" },
         { status: 429 },
       );
+      res.headers.set("Retry-After", String(retryAfter));
+      return res;
     }
   }
 
