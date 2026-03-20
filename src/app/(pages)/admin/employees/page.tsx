@@ -77,6 +77,14 @@ export default function EmployeesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Slack sync
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{
+    matched: { employee_name: string; slack_name: string; slack_user_id: string }[];
+    unmatched_employees: string[];
+    unmatched_slack: { slack_user_id: string; name: string }[];
+  } | null>(null);
+
   // Expanded employee for policy editing
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [policies, setPolicies] = useState<LeavePolicy[]>([]);
@@ -101,6 +109,24 @@ export default function EmployeesPage() {
         </div>
       </div>
     );
+  }
+
+  async function handleSlackSync() {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch("/api/slack/sync", { method: "POST" });
+      const json: ApiResponse<typeof syncResult> = await res.json();
+      if (!json.success || !json.data) {
+        throw new Error(json.error || "Sync failed");
+      }
+      setSyncResult(json.data);
+      refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
   }
 
   async function handleAddEmployee(e: React.FormEvent) {
@@ -269,26 +295,126 @@ export default function EmployeesPage() {
             {t("employees.description")}
           </p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600"
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-            stroke="currentColor"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSlackSync}
+            disabled={syncing}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 4.5v15m7.5-7.5h-15"
-            />
-          </svg>
-          {t("employees.addEmployee")}
-        </button>
+            {syncing ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700 dark:border-gray-500 dark:border-t-gray-200" />
+            ) : (
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M20.97 14.154v4.992" />
+              </svg>
+            )}
+            {syncing
+              ? (locale === "zh-TW" ? "同步中..." : "Syncing...")
+              : (locale === "zh-TW" ? "同步 Slack" : "Sync Slack")}
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+            {t("employees.addEmployee")}
+          </button>
+        </div>
       </div>
+
+      {/* Slack sync result */}
+      {syncResult && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {locale === "zh-TW" ? "Slack 同步結果" : "Slack Sync Result"}
+            </h3>
+            <button
+              onClick={() => setSyncResult(null)}
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Matched */}
+          {syncResult.matched.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                {locale === "zh-TW"
+                  ? `已配對 (${syncResult.matched.length})`
+                  : `Matched (${syncResult.matched.length})`}
+              </p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {syncResult.matched.map((m) => (
+                  <span
+                    key={m.slack_user_id}
+                    className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  >
+                    {m.employee_name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Unmatched employees */}
+          {syncResult.unmatched_employees.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                {locale === "zh-TW"
+                  ? `未配對的員工 (${syncResult.unmatched_employees.length}) — 請手動設定 Slack User ID`
+                  : `Unmatched employees (${syncResult.unmatched_employees.length}) — set Slack User ID manually`}
+              </p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {syncResult.unmatched_employees.map((name) => (
+                  <span
+                    key={name}
+                    className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Unmatched Slack users */}
+          {syncResult.unmatched_slack.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                {locale === "zh-TW"
+                  ? `Slack 上未對應的成員 (${syncResult.unmatched_slack.length})`
+                  : `Unmatched Slack members (${syncResult.unmatched_slack.length})`}
+              </p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {syncResult.unmatched_slack.map((u) => (
+                  <span
+                    key={u.slack_user_id}
+                    className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                  >
+                    {u.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Employee list */}
       {isLoading ? (
@@ -318,9 +444,16 @@ export default function EmployeesPage() {
                   className="flex flex-1 items-center gap-4 text-left transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {emp.name}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {emp.name}
+                      </p>
+                      {emp.slack_user_id ? (
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" title={`Slack: ${emp.slack_user_id}`} />
+                      ) : (
+                        <span className="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600" title={locale === "zh-TW" ? "未連結 Slack" : "Not linked to Slack"} />
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400 dark:text-gray-500">
                       {truncateAddress(emp.wallet_address)}
                     </p>
