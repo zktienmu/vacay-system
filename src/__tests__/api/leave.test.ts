@@ -2,8 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { mockLeaveRequest, mockEmployee } from '@/__tests__/helpers/mocks'
 
-// Mock server-only
-vi.mock('server-only', () => ({}))
+// server-only is mocked via vitest.config.ts alias
 
 // Session mock state
 const mockSave = vi.fn()
@@ -41,6 +40,7 @@ const mockGetLeaveRequestById = vi.fn()
 const mockUpdateLeaveRequest = vi.fn()
 const mockGetLeavePolicies = vi.fn()
 const mockGetApprovedDaysInPeriod = vi.fn()
+const mockGetPublicHolidayDatesInRange = vi.fn()
 
 vi.mock('@/lib/supabase/queries', () => ({
   getLeaveRequests: (...args: unknown[]) => mockGetLeaveRequests(...args),
@@ -51,6 +51,7 @@ vi.mock('@/lib/supabase/queries', () => ({
   updateLeaveRequest: (...args: unknown[]) => mockUpdateLeaveRequest(...args),
   getLeavePolicies: (...args: unknown[]) => mockGetLeavePolicies(...args),
   getApprovedDaysInPeriod: (...args: unknown[]) => mockGetApprovedDaysInPeriod(...args),
+  getPublicHolidayDatesInRange: (...args: unknown[]) => mockGetPublicHolidayDatesInRange(...args),
 }))
 
 // Mock integrations
@@ -160,6 +161,7 @@ describe('POST /api/leave', () => {
       { id: 'p1', employee_id: 'emp-001', leave_type: 'annual', total_days: 20, expires_at: null, created_at: '', updated_at: '' },
     ])
     mockGetApprovedDaysInPeriod.mockResolvedValue(0)
+    mockGetPublicHolidayDatesInRange.mockResolvedValue([])
     mockCreateLeaveRequest.mockResolvedValue(mockLeaveRequest())
 
     const mod = await import('@/app/api/leave/route')
@@ -270,8 +272,6 @@ describe('POST /api/leave', () => {
 
     expect(res.status).toBe(201)
     expect(json.success).toBe(true)
-    // getEmployeeById should not be called for balance checking with unpaid
-    // (it's only called for balance checks, not for unpaid/official)
   })
 
   it('skips balance check for official leave', async () => {

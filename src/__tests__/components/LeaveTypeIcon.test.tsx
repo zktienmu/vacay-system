@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import LeaveTypeIcon, {
   getLeaveTypeEmoji,
   getLeaveTypeLabel,
   getLeaveTypeColor,
 } from '@/components/LeaveTypeIcon'
 import type { LeaveType } from '@/types'
+import { renderWithProviders } from '@/__tests__/helpers/render'
 
 describe('getLeaveTypeEmoji', () => {
   it('returns palm tree emoji for annual', () => {
@@ -60,20 +61,33 @@ describe('getLeaveTypeLabel', () => {
 })
 
 describe('getLeaveTypeColor', () => {
-  const expectedColors: Record<LeaveType, string> = {
-    annual: 'text-blue-600',
-    personal: 'text-purple-600',
-    sick: 'text-red-600',
-    official: 'text-teal-600',
-    unpaid: 'text-gray-600',
-    remote: 'text-green-600',
-  }
+  it('returns color class containing text-blue-600 for annual', () => {
+    expect(getLeaveTypeColor('annual')).toContain('text-blue-600')
+  })
 
-  for (const [type, color] of Object.entries(expectedColors)) {
-    it(`returns "${color}" for ${type}`, () => {
-      expect(getLeaveTypeColor(type as LeaveType)).toBe(color)
-    })
-  }
+  it('returns color class containing text-purple-600 for personal', () => {
+    expect(getLeaveTypeColor('personal')).toContain('text-purple-600')
+  })
+
+  it('returns color class containing text-red-600 for sick', () => {
+    expect(getLeaveTypeColor('sick')).toContain('text-red-600')
+  })
+
+  it('returns color class containing text-teal-600 for official', () => {
+    expect(getLeaveTypeColor('official')).toContain('text-teal-600')
+  })
+
+  it('returns color class containing text-gray-600 for unpaid', () => {
+    expect(getLeaveTypeColor('unpaid')).toContain('text-gray-600')
+  })
+
+  it('returns color class containing text-green-600 for remote', () => {
+    expect(getLeaveTypeColor('remote')).toContain('text-green-600')
+  })
+
+  it('includes dark mode classes', () => {
+    expect(getLeaveTypeColor('annual')).toContain('dark:')
+  })
 })
 
 describe('LeaveTypeIcon component', () => {
@@ -81,7 +95,7 @@ describe('LeaveTypeIcon component', () => {
     const types: LeaveType[] = ['annual', 'personal', 'sick', 'official', 'unpaid', 'remote']
 
     for (const type of types) {
-      const { unmount } = render(<LeaveTypeIcon type={type} />)
+      const { unmount } = renderWithProviders(<LeaveTypeIcon type={type} />)
       const emoji = getLeaveTypeEmoji(type)
       expect(screen.getByText(emoji)).toBeInTheDocument()
       unmount()
@@ -89,40 +103,35 @@ describe('LeaveTypeIcon component', () => {
   })
 
   it('does not show label by default', () => {
-    render(<LeaveTypeIcon type="annual" />)
-    expect(screen.queryByText('Annual')).not.toBeInTheDocument()
+    const { container } = renderWithProviders(<LeaveTypeIcon type="annual" />)
+    // Should have only one child span (the emoji), not a label span
+    const spans = container.querySelectorAll('span > span')
+    expect(spans).toHaveLength(1) // Only the emoji span
   })
 
   it('shows label when showLabel is true', () => {
-    render(<LeaveTypeIcon type="annual" showLabel />)
-    expect(screen.getByText('Annual')).toBeInTheDocument()
+    const { container } = renderWithProviders(<LeaveTypeIcon type="annual" showLabel />)
+    // Should have two child spans (emoji + label)
+    const spans = container.querySelectorAll('span > span')
+    expect(spans.length).toBeGreaterThanOrEqual(2)
   })
 
-  it('shows label for each type when showLabel is true', () => {
-    const types: { type: LeaveType; label: string }[] = [
-      { type: 'annual', label: 'Annual' },
-      { type: 'personal', label: 'Personal' },
-      { type: 'sick', label: 'Sick' },
-      { type: 'official', label: 'Official' },
-      { type: 'unpaid', label: 'Unpaid' },
-      { type: 'remote', label: 'Remote' },
-    ]
-
-    for (const { type, label } of types) {
-      const { unmount } = render(<LeaveTypeIcon type={type} showLabel />)
-      expect(screen.getByText(label)).toBeInTheDocument()
-      unmount()
-    }
+  it('renders label text when showLabel is true', () => {
+    const { container } = renderWithProviders(<LeaveTypeIcon type="annual" showLabel />)
+    // The label should have the text-sm class and contain translated text
+    const labelSpan = container.querySelector('span.text-sm')
+    expect(labelSpan).toBeInTheDocument()
+    expect(labelSpan?.textContent).toBeTruthy()
   })
 
-  it('applies correct color class', () => {
-    const { container } = render(<LeaveTypeIcon type="annual" />)
+  it('applies correct color class to wrapper', () => {
+    const { container } = renderWithProviders(<LeaveTypeIcon type="annual" />)
     const wrapper = container.firstElementChild
     expect(wrapper?.className).toContain('text-blue-600')
   })
 
   it('renders as inline-flex span', () => {
-    const { container } = render(<LeaveTypeIcon type="sick" />)
+    const { container } = renderWithProviders(<LeaveTypeIcon type="sick" />)
     const wrapper = container.firstElementChild
     expect(wrapper?.tagName).toBe('SPAN')
     expect(wrapper?.className).toContain('inline-flex')

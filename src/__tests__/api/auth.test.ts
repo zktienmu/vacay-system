@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock server-only
-vi.mock('server-only', () => ({}))
+// server-only is mocked via vitest.config.ts alias
 
 // Mock iron-session
 const mockSave = vi.fn()
@@ -118,7 +117,7 @@ describe('POST /api/auth/verify', () => {
     vi.resetModules()
 
     // Re-mock modules for fresh import
-    vi.doMock('server-only', () => ({}))
+    // server-only handled by alias
     vi.doMock('iron-session', () => ({
       getIronSession: vi.fn(() =>
         Promise.resolve(
@@ -313,7 +312,7 @@ describe('GET /api/auth/me', () => {
     mockSessionData = { employee_id: '' }
 
     vi.resetModules()
-    vi.doMock('server-only', () => ({}))
+    // server-only handled by alias
     vi.doMock('iron-session', () => ({
       getIronSession: vi.fn(() =>
         Promise.resolve(
@@ -354,7 +353,7 @@ describe('GET /api/auth/me', () => {
     }
 
     vi.resetModules()
-    vi.doMock('server-only', () => ({}))
+    // server-only handled by alias
     vi.doMock('iron-session', () => ({
       getIronSession: vi.fn(() =>
         Promise.resolve(
@@ -398,7 +397,7 @@ describe('POST /api/auth/logout', () => {
     mockSessionData = { employee_id: 'emp-001' }
 
     vi.resetModules()
-    vi.doMock('server-only', () => ({}))
+    // server-only handled by alias
     vi.doMock('iron-session', () => ({
       getIronSession: vi.fn(() =>
         Promise.resolve(

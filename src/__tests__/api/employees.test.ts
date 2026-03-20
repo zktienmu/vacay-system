@@ -2,8 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { mockEmployee } from '@/__tests__/helpers/mocks'
 
-// Mock server-only
-vi.mock('server-only', () => ({}))
+// server-only is mocked via vitest.config.ts alias
 
 // Session mock state
 const mockSave = vi.fn()

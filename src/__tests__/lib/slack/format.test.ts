@@ -1,7 +1,4 @@
-import { describe, it, expect } from 'vitest'
-
-// Mock "server-only" since it fails outside Next.js server context
-vi.mock('server-only', () => ({}))
+import { describe, it, expect, vi } from 'vitest'
 
 import {
   formatLeaveType,
@@ -56,17 +53,17 @@ describe('formatDate', () => {
 describe('formatDateRange', () => {
   it('formats a date range with arrow separator', () => {
     const result = formatDateRange('2026-03-13', '2026-03-15')
-    expect(result).toBe('Mar 13, 2026 → Mar 15, 2026')
+    expect(result).toBe('Mar 13, 2026 \u2192 Mar 15, 2026')
   })
 
   it('handles same-day range', () => {
     const result = formatDateRange('2026-04-01', '2026-04-01')
-    expect(result).toBe('Apr 1, 2026 → Apr 1, 2026')
+    expect(result).toBe('Apr 1, 2026 \u2192 Apr 1, 2026')
   })
 
   it('handles cross-year range', () => {
     const result = formatDateRange('2025-12-29', '2026-01-02')
-    expect(result).toBe('Dec 29, 2025 → Jan 2, 2026')
+    expect(result).toBe('Dec 29, 2025 \u2192 Jan 2, 2026')
   })
 })
 
