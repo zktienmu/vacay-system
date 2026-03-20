@@ -15,6 +15,8 @@ const navLinks = [
 const adminLinks = [
   { href: "/admin", label: "Review" },
   { href: "/admin/employees", label: "Employees" },
+  { href: "/admin/holidays", label: "Holidays" },
+  { href: "/admin/reports", label: "Reports" },
 ];
 
 function HamburgerIcon({ open }: { open: boolean }) {
