@@ -92,8 +92,8 @@ export const PATCH = withAuth(
         return NextResponse.json({ success: true, data: updated });
       }
 
-      // Admin approving/rejecting
-      if (session.role !== "admin") {
+      // Admin or manager approving/rejecting
+      if (session.role !== "admin" && !session.is_manager) {
         return NextResponse.json(
           { success: false, error: "Forbidden" },
           { status: 403 },

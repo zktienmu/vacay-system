@@ -87,6 +87,10 @@ const en = {
     validationNoWorkingDays: "Selected range contains no working days",
     validationInsufficientBalance: "Insufficient balance: {remaining} days remaining for {type}",
     daysUnit: "days",
+    handoverUrl: "Handover Document URL",
+    handoverUrlRequired: "Handover Document URL (required)",
+    handoverUrlHint: "A handover document URL is required for leaves of 3 or more working days",
+    handoverUrlValidation: "Handover document URL is required for leaves of 3+ working days",
   },
   calendar: {
     title: "Team Calendar",
@@ -150,6 +154,10 @@ const en = {
     roleAdmin: "Admin",
     startDate: "Start Date",
     adding: "Adding...",
+    department: "Department",
+    departmentEngineering: "Engineering",
+    departmentAdmin: "Admin",
+    isManager: "Department Manager",
   },
 } as const;
 

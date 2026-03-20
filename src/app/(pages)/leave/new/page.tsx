@@ -55,6 +55,7 @@ export default function NewLeavePage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [delegateId, setDelegateId] = useState("");
+  const [handoverUrl, setHandoverUrl] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +77,8 @@ export default function NewLeavePage() {
 
   const leaveTypeLabel = (type: LeaveType) => t(`leave.types.${type}` as `leave.types.${LeaveType}`);
 
+  const handoverRequired = workingDays >= 3;
+
   const validationErrors = useMemo(() => {
     const errors: string[] = [];
     if (!startDate) errors.push(t("leave.validationStartDate"));
@@ -94,11 +97,19 @@ export default function NewLeavePage() {
         })
       );
     }
+    if (handoverRequired && !handoverUrl.trim()) {
+      errors.push(
+        locale === "zh-TW"
+          ? "連續請假 3 天以上需提供交接事項網址"
+          : "Handover document URL is required for leaves of 3+ working days"
+      );
+    }
     return errors;
-  }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale]);
+  }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale, handoverRequired, handoverUrl]);
 
   const canSubmit =
-    startDate && endDate && workingDays > 0 && validationErrors.length === 0 && !submitting;
+    startDate && endDate && workingDays > 0 && validationErrors.length === 0 && !submitting &&
+    (!handoverRequired || handoverUrl.trim() !== "");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -116,6 +127,7 @@ export default function NewLeavePage() {
           start_date: startDate,
           end_date: endDate,
           delegate_id: delegateId || null,
+          handover_url: handoverUrl.trim() || null,
           notes: notes.trim() || null,
         }),
       });
@@ -263,6 +275,32 @@ export default function NewLeavePage() {
             {t("leave.delegateHint")}
           </p>
         </div>
+
+        {/* Handover URL (required when >= 3 working days) */}
+        {handoverRequired && (
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {locale === "zh-TW" ? "交接事項" : "Handover Document URL"}{" "}
+              <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="url"
+              value={handoverUrl}
+              onChange={(e) => setHandoverUrl(e.target.value)}
+              placeholder="https://..."
+              className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:bg-gray-700 dark:text-gray-100 ${
+                handoverRequired && !handoverUrl.trim()
+                  ? "border-red-400 dark:border-red-500"
+                  : "border-gray-300 dark:border-gray-600"
+              }`}
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {locale === "zh-TW"
+                ? "連續請假 3 天以上需提供交接事項文件連結"
+                : "A handover document URL is required for leaves of 3 or more working days"}
+            </p>
+          </div>
+        )}
 
         {/* Notes */}
         <div>

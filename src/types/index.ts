@@ -4,6 +4,8 @@ export interface SessionData {
   wallet_address: string;
   name: string;
   role: "admin" | "employee";
+  department: "engineering" | "admin";
+  is_manager: boolean;
   nonce?: string;
   nonce_issued_at?: number; // Unix timestamp (ms) for nonce TTL enforcement
 }
@@ -16,6 +18,8 @@ export interface Employee {
   slack_user_id: string | null;
   start_date: string; // ISO date
   role: "admin" | "employee";
+  department: "engineering" | "admin";
+  is_manager: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +52,7 @@ export interface LeaveRequest {
   end_date: string; // ISO date
   days: number;
   delegate_id: string | null;
+  handover_url: string | null;
   notes: string | null;
   status: LeaveStatus;
   reviewed_by: string | null;

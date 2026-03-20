@@ -30,8 +30,8 @@ export const GET = withAuth(
         end_date?: string;
       } = {};
 
-      // Only admins can view all requests
-      if (!(showAll && session.role === "admin")) {
+      // Only admins and managers can view all requests
+      if (!(showAll && (session.role === "admin" || session.is_manager))) {
         filters.employee_id = session.employee_id;
       }
 
@@ -75,7 +75,7 @@ export const POST = withAuth(
         );
       }
 
-      const { leave_type, start_date, end_date, delegate_id, notes } =
+      const { leave_type, start_date, end_date, delegate_id, handover_url, notes } =
         parsed.data;
 
       // Validate that start date is not in the past
@@ -95,6 +95,17 @@ export const POST = withAuth(
           {
             success: false,
             error: "No working days in the selected range",
+          },
+          { status: 400 },
+        );
+      }
+
+      // Require handover URL for leaves >= 3 working days
+      if (days >= 3 && (!handover_url || handover_url.trim() === "")) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "連續請假 3 天以上需提供交接事項網址",
           },
           { status: 400 },
         );
@@ -145,6 +156,7 @@ export const POST = withAuth(
         end_date,
         days,
         delegate_id: delegate_id ?? null,
+        handover_url: handover_url ?? null,
         notes: notes ?? null,
         status: "pending",
       });

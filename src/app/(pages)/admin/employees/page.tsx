@@ -52,6 +52,8 @@ export default function EmployeesPage() {
     name: "",
     wallet_address: "",
     role: "employee" as "admin" | "employee",
+    department: "engineering" as "engineering" | "admin",
+    is_manager: false,
     start_date: "",
   });
   const [addLoading, setAddLoading] = useState(false);
@@ -103,6 +105,8 @@ export default function EmployeesPage() {
         name: "",
         wallet_address: "",
         role: "employee",
+        department: "engineering",
+        is_manager: false,
         start_date: "",
       });
       refetch();
@@ -240,7 +244,7 @@ export default function EmployeesPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                       emp.role === "admin"
@@ -250,6 +254,16 @@ export default function EmployeesPage() {
                   >
                     {emp.role}
                   </span>
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                    {emp.department === "admin"
+                      ? (locale === "zh-TW" ? "行政" : "Admin")
+                      : (locale === "zh-TW" ? "工程" : "Engineering")}
+                  </span>
+                  {emp.is_manager && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                      {locale === "zh-TW" ? "主管" : "Manager"}
+                    </span>
+                  )}
                   <span className="hidden text-sm text-gray-500 sm:inline dark:text-gray-400">
                     {t("employees.since")} {format(new Date(emp.start_date), "MMM yyyy", { locale: dateFnsLocale })}
                   </span>
@@ -415,6 +429,43 @@ export default function EmployeesPage() {
                         <option value="employee">{t("employees.roleEmployee")}</option>
                         <option value="admin">{t("employees.roleAdmin")}</option>
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {locale === "zh-TW" ? "部門" : "Department"}
+                      </label>
+                      <select
+                        value={addForm.department}
+                        onChange={(e) =>
+                          setAddForm((f) => ({
+                            ...f,
+                            department: e.target.value as "engineering" | "admin",
+                          }))
+                        }
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                      >
+                        <option value="engineering">{locale === "zh-TW" ? "工程" : "Engineering"}</option>
+                        <option value="admin">{locale === "zh-TW" ? "行政" : "Admin"}</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="is_manager"
+                        checked={addForm.is_manager}
+                        onChange={(e) =>
+                          setAddForm((f) => ({
+                            ...f,
+                            is_manager: e.target.checked,
+                          }))
+                        }
+                        className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700"
+                      />
+                      <label htmlFor="is_manager" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {locale === "zh-TW" ? "部門主管" : "Department Manager"}
+                      </label>
                     </div>
 
                     <div>

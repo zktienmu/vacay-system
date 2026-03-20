@@ -36,6 +36,7 @@ export const createLeaveRequestSchema = z
     start_date: isoDate,
     end_date: isoDate,
     delegate_id: z.string().uuid().nullable().optional(),
+    handover_url: z.string().url().nullable().optional(),
     notes: z.string().max(1000).nullable().optional(),
   })
   .refine(
@@ -53,12 +54,16 @@ export const cancelLeaveSchema = z.object({
 
 // === Employees ===
 
+const departments = ["engineering", "admin"] as const;
+
 export const createEmployeeSchema = z.object({
   wallet_address: ethereumAddress,
   name: z.string().min(1).max(200),
   slack_user_id: z.string().nullable().optional(),
   start_date: isoDate,
   role: z.enum(roles).optional().default("employee"),
+  department: z.enum(departments).optional().default("engineering"),
+  is_manager: z.boolean().optional().default(false),
 });
 
 export const updateEmployeeSchema = z.object({
@@ -67,6 +72,8 @@ export const updateEmployeeSchema = z.object({
   slack_user_id: z.string().nullable().optional(),
   start_date: isoDate.optional(),
   role: z.enum(roles).optional(),
+  department: z.enum(departments).optional(),
+  is_manager: z.boolean().optional(),
 });
 
 // === Public Holidays ===
@@ -84,4 +91,8 @@ export const upsertPolicySchema = z.object({
   leave_type: z.enum(leaveTypes),
   total_days: z.number().int().min(0).max(365),
   expires_at: z.string().datetime().nullable().optional(),
+});
+
+export const upsertPoliciesBatchSchema = z.object({
+  policies: z.array(upsertPolicySchema).min(1).max(10),
 });

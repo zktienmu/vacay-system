@@ -41,9 +41,21 @@ export function withAuth(handler: AuthHandler) {
         );
       }
 
+      // Sync session with database if role, department, or is_manager changed
+      let sessionChanged = false;
       if (employee.role !== session.role) {
-        // Role changed since login — update session
         session.role = employee.role;
+        sessionChanged = true;
+      }
+      if (employee.department !== session.department) {
+        session.department = employee.department;
+        sessionChanged = true;
+      }
+      if (employee.is_manager !== session.is_manager) {
+        session.is_manager = employee.is_manager;
+        sessionChanged = true;
+      }
+      if (sessionChanged) {
         await session.save();
       }
 
@@ -60,6 +72,23 @@ export function withAuth(handler: AuthHandler) {
 export function withAdmin(handler: AuthHandler) {
   return withAuth(async (req, ctx, session) => {
     if (session.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+
+    return handler(req, ctx, session);
+  });
+}
+
+/**
+ * Middleware that allows both system admins and managers to access the route.
+ * Used for leave approval endpoints where any department manager can approve.
+ */
+export function withApprover(handler: AuthHandler) {
+  return withAuth(async (req, ctx, session) => {
+    if (session.role !== "admin" && !session.is_manager) {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 },

@@ -51,6 +51,8 @@ export const POST = withAdmin(
         slack_user_id: parsed.data.slack_user_id ?? null,
         start_date: parsed.data.start_date,
         role: parsed.data.role,
+        department: parsed.data.department,
+        is_manager: parsed.data.is_manager,
       });
 
       await insertAuditLog({

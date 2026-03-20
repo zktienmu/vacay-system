@@ -48,11 +48,17 @@ export default function Navbar() {
   const { theme, toggleTheme, mounted } = useTheme();
   const { t, locale, setLocale } = useTranslation();
   const isAdmin = session?.role === "admin";
+  const isManager = session?.is_manager === true;
 
   const navLinks = [
     { href: "/dashboard", label: t("nav.dashboard") },
     { href: "/leave/new", label: t("nav.newLeave") },
     { href: "/calendar", label: t("nav.calendar") },
+  ];
+
+  // Managers can see the review page; only full admins see employees/holidays/reports
+  const managerLinks = [
+    { href: "/admin", label: t("nav.admin") },
   ];
 
   const adminLinks = [
@@ -62,7 +68,11 @@ export default function Navbar() {
     { href: "/admin/reports", label: locale === "zh-TW" ? "報表" : "Reports" },
   ];
 
-  const allLinks = isAdmin ? [...navLinks, ...adminLinks] : navLinks;
+  const allLinks = isAdmin
+    ? [...navLinks, ...adminLinks]
+    : isManager
+      ? [...navLinks, ...managerLinks]
+      : navLinks;
 
   function isActive(href: string): boolean {
     if (href === "/dashboard") return pathname === "/dashboard";

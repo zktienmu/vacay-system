@@ -122,6 +122,8 @@ export async function POST(req: NextRequest) {
     session.wallet_address = employee.wallet_address;
     session.name = employee.name;
     session.role = employee.role;
+    session.department = employee.department;
+    session.is_manager = employee.is_manager;
     await session.save();
 
     await insertAuditLog({
@@ -143,6 +145,8 @@ export async function POST(req: NextRequest) {
         wallet_address: employee.wallet_address,
         name: employee.name,
         role: employee.role,
+        department: employee.department,
+        is_manager: employee.is_manager,
       },
     });
   } catch {

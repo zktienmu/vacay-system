@@ -31,6 +31,8 @@ export const defaultSession: SessionData = {
   wallet_address: "",
   name: "",
   role: "employee",
+  department: "engineering",
+  is_manager: false,
   nonce: undefined,
   nonce_issued_at: undefined,
 };

@@ -87,6 +87,10 @@ const zhTW = {
     validationNoWorkingDays: "所選範圍內無工作天",
     validationInsufficientBalance: "餘額不足：{type}剩餘 {remaining} 天",
     daysUnit: "天",
+    handoverUrl: "交接事項",
+    handoverUrlRequired: "交接事項（必填）",
+    handoverUrlHint: "連續請假 3 天以上需提供交接事項文件連結",
+    handoverUrlValidation: "連續請假 3 天以上需提供交接事項網址",
   },
   calendar: {
     title: "團隊行事曆",
@@ -150,6 +154,10 @@ const zhTW = {
     roleAdmin: "管理員",
     startDate: "到職日期",
     adding: "新增中...",
+    department: "部門",
+    departmentEngineering: "工程",
+    departmentAdmin: "行政",
+    isManager: "部門主管",
   },
 } as const;
 

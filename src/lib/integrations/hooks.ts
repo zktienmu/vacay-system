@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "@/lib/supabase/client";
-import { notifyNewRequest, notifyApproved, notifyRejected } from "@/lib/slack/notify";
+import { notifyNewRequest, notifyApproved, notifyRejected, notifyDelegate } from "@/lib/slack/notify";
 import { createLeaveEvent, deleteLeaveEvent } from "@/lib/google/calendar";
 import type { LeaveRequest, Employee } from "@/types";
 
@@ -24,16 +24,17 @@ async function fetchEmployee(employeeId: string): Promise<Employee | null> {
 }
 
 /**
- * Fetch all admin employees from the database.
+ * Fetch all admin employees and managers from the database.
+ * These are the people who can approve leave requests.
  */
-async function fetchAdmins(): Promise<Employee[]> {
+async function fetchApprovers(): Promise<Employee[]> {
   const { data, error } = await supabase
     .from("employees")
     .select("*")
-    .eq("role", "admin");
+    .or("role.eq.admin,is_manager.eq.true");
 
   if (error) {
-    console.error("[Integrations] Failed to fetch admins", error);
+    console.error("[Integrations] Failed to fetch approvers", error);
     return [];
   }
 
@@ -56,8 +57,8 @@ export async function onLeaveRequestCreated(
     return;
   }
 
-  const admins = await fetchAdmins();
-  await notifyNewRequest(request, employee, admins);
+  const approvers = await fetchApprovers();
+  await notifyNewRequest(request, employee, approvers);
 }
 
 /**
@@ -78,6 +79,14 @@ export async function onLeaveRequestApproved(
 
   // Send Slack notifications (fire-and-forget)
   await notifyApproved(request, employee);
+
+  // Notify delegate if one is assigned
+  if (request.delegate_id) {
+    const delegate = await fetchEmployee(request.delegate_id);
+    if (delegate) {
+      await notifyDelegate(request, employee, delegate);
+    }
+  }
 
   // Create Google Calendar event
   const eventId = await createLeaveEvent(request, employee.name);

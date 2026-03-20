@@ -96,6 +96,41 @@ export async function notifyApproved(
 }
 
 /**
+ * Notify the delegate via DM that they are covering for the employee.
+ * Fire-and-forget: errors are logged, never thrown.
+ */
+export async function notifyDelegate(
+  request: LeaveRequest,
+  employee: Employee,
+  delegate: Employee,
+): Promise<void> {
+  if (!slack || !delegate.slack_user_id) return;
+
+  const dateRange = `${request.start_date} ~ ${request.end_date}`;
+  const handoverText = request.handover_url
+    ? `\n交接內容：${request.handover_url}`
+    : "";
+
+  try {
+    await slack.chat.postMessage({
+      channel: delegate.slack_user_id,
+      text: `📋 你是 ${employee.name} 的代理人`,
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `📋 *你是 ${employee.name} 的代理人*\n日期：${dateRange}${handoverText}`,
+          },
+        },
+      ],
+    });
+  } catch (error) {
+    console.error("[Slack] Failed to notify delegate", delegate.id, error);
+  }
+}
+
+/**
  * Notify the employee via DM about rejection.
  * Fire-and-forget: errors are logged, never thrown.
  */

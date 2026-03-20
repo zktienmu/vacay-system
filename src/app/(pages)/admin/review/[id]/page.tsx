@@ -57,7 +57,7 @@ export default function ReviewDetailPage() {
     fetchRequest();
   }, [id]);
 
-  if (session?.role !== "admin") {
+  if (session?.role !== "admin" && !session?.is_manager) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
@@ -217,6 +217,25 @@ export default function ReviewDetailPage() {
               {request.delegate?.name || t("review.noneAssigned")}
             </div>
           </div>
+
+          {/* Handover URL */}
+          {request.handover_url && (
+            <div className="grid grid-cols-3 gap-4 border-b border-gray-100 pb-4 dark:border-gray-700">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                {locale === "zh-TW" ? "交接事項" : "Handover"}
+              </div>
+              <div className="col-span-2 text-sm text-blue-600 dark:text-blue-400">
+                <a
+                  href={request.handover_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-blue-800 dark:hover:text-blue-300"
+                >
+                  {request.handover_url}
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* Notes */}
           <div className="grid grid-cols-3 gap-4 border-b border-gray-100 pb-4 dark:border-gray-700">

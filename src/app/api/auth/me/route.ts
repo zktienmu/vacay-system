@@ -15,6 +15,8 @@ export const GET = withAuth(
         wallet_address: session.wallet_address,
         name: session.name,
         role: session.role,
+        department: session.department,
+        is_manager: session.is_manager,
       },
     });
   },
