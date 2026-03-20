@@ -66,8 +66,9 @@ export default function NewLeavePage() {
   );
 
   const currentBalance = balances.find((b) => b.leave_type === leaveType);
+  const isUnlimited = currentBalance?.total_days === -1;
   const remainingAfter =
-    currentBalance != null
+    currentBalance != null && !isUnlimited
       ? currentBalance.remaining_days - workingDays
       : null;
 
@@ -186,7 +187,10 @@ export default function NewLeavePage() {
           </select>
           {currentBalance && (
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("leave.balance")}: {currentBalance.remaining_days} / {currentBalance.total_days} {t("leave.daysRemaining")}
+              {t("leave.balance")}:{" "}
+              {isUnlimited
+                ? (locale === "zh-TW" ? "無限制" : "Unlimited")
+                : `${currentBalance.remaining_days} / ${currentBalance.total_days} ${t("leave.daysRemaining")}`}
             </p>
           )}
         </div>

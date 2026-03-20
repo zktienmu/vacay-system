@@ -347,10 +347,18 @@ describe('upsertPolicySchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('rejects negative total days', () => {
+  it('accepts -1 as unlimited total days', () => {
     const result = upsertPolicySchema.safeParse({
       leave_type: 'annual',
       total_days: -1,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects total days below -1', () => {
+    const result = upsertPolicySchema.safeParse({
+      leave_type: 'annual',
+      total_days: -2,
     })
     expect(result.success).toBe(false)
   })

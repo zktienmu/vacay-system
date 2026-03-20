@@ -406,27 +406,59 @@ export default function EmployeesPage() {
                         {t("employees.leavePolicies")}
                       </h3>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {LEAVE_TYPES.map((type) => (
-                          <div key={type} className="flex items-center gap-2">
-                            <label className="w-20 text-sm text-gray-600 dark:text-gray-400">
-                              {t(`leave.types.${type}` as `leave.types.${LeaveType}`)}
-                            </label>
-                            <input
-                              type="number"
-                              min={0}
-                              max={365}
-                              value={policyForm[type] ?? 0}
-                              onChange={(e) =>
-                                setPolicyForm((prev) => ({
-                                  ...prev,
-                                  [type]: parseInt(e.target.value) || 0,
-                                }))
-                              }
-                              className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-                            />
-                            <span className="text-xs text-gray-400 dark:text-gray-500">{t("employees.daysLabel")}</span>
-                          </div>
-                        ))}
+                        {LEAVE_TYPES.map((type) => {
+                          const isUnlimited = policyForm[type] === -1;
+                          const isAnnual = type === "annual";
+                          return (
+                            <div key={type} className="flex items-center gap-2">
+                              <label className="w-20 text-sm text-gray-600 dark:text-gray-400">
+                                {t(`leave.types.${type}` as `leave.types.${LeaveType}`)}
+                              </label>
+                              {isAnnual || !isUnlimited ? (
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={365}
+                                  value={isUnlimited ? "" : (policyForm[type] ?? 0)}
+                                  onChange={(e) =>
+                                    setPolicyForm((prev) => ({
+                                      ...prev,
+                                      [type]: parseInt(e.target.value) || 0,
+                                    }))
+                                  }
+                                  disabled={isUnlimited}
+                                  className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:opacity-40 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                />
+                              ) : (
+                                <span className="w-20 rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-center text-sm font-medium text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                  {locale === "zh-TW" ? "無限" : "∞"}
+                                </span>
+                              )}
+                              {!isAnnual ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPolicyForm((prev) => ({
+                                      ...prev,
+                                      [type]: prev[type] === -1 ? 0 : -1,
+                                    }))
+                                  }
+                                  className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                                    isUnlimited
+                                      ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60"
+                                      : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600"
+                                  }`}
+                                >
+                                  {isUnlimited
+                                    ? (locale === "zh-TW" ? "改限制" : "Set limit")
+                                    : (locale === "zh-TW" ? "無限制" : "Unlimited")}
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400 dark:text-gray-500">{t("employees.daysLabel")}</span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                       <div className="mt-4 flex justify-end">
                         <button

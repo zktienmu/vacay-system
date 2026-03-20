@@ -89,7 +89,7 @@ export const createHolidaySchema = z.object({
 
 export const upsertPolicySchema = z.object({
   leave_type: z.enum(leaveTypes),
-  total_days: z.number().int().min(0).max(365),
+  total_days: z.number().int().min(-1).max(365), // -1 = unlimited
   expires_at: z.string().datetime().nullable().optional(),
 });
 

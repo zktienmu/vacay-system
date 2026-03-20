@@ -87,6 +87,7 @@ export async function getLeaveBalance(
   const policy = policies.find((p) => p.leave_type === leaveType);
 
   const totalDays = policy?.total_days ?? 0;
+  const unlimited = totalDays === -1;
 
   const { periodStart, periodEnd } = calculateAnniversaryPeriod(
     employeeStartDate,
@@ -103,7 +104,7 @@ export async function getLeaveBalance(
     leave_type: leaveType,
     total_days: totalDays,
     used_days: usedDays,
-    remaining_days: totalDays - usedDays,
+    remaining_days: unlimited ? Infinity : totalDays - usedDays,
   };
 }
 
