@@ -3,6 +3,7 @@
 import { useState, useEffect, Fragment } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
+import { zhTW as zhTWLocale } from "date-fns/locale/zh-TW";
 import {
   Dialog,
   DialogPanel,
@@ -12,6 +13,7 @@ import {
 } from "@headlessui/react";
 import { useSession } from "@/hooks/useSession";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useTranslation } from "@/lib/i18n/context";
 import type {
   Employee,
   LeavePolicy,
@@ -28,15 +30,6 @@ const LEAVE_TYPES: LeaveType[] = [
   "remote",
 ];
 
-const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
-  annual: "Annual",
-  personal: "Personal",
-  sick: "Sick",
-  official: "Official",
-  unpaid: "Unpaid",
-  remote: "Remote",
-};
-
 function truncateAddress(addr: string): string {
   if (addr.length <= 12) return addr;
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -49,6 +42,9 @@ interface PolicyFormData {
 export default function EmployeesPage() {
   const { session } = useSession();
   const { employees, isLoading, refetch } = useEmployees();
+  const { t, locale } = useTranslation();
+
+  const dateFnsLocale = locale === "zh-TW" ? zhTWLocale : undefined;
 
   // Add employee modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -72,15 +68,15 @@ export default function EmployeesPage() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-900">Access Denied</h2>
-          <p className="mt-2 text-gray-500">
-            You do not have permission to access this page.
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t("common.accessDenied")}</h2>
+          <p className="mt-2 text-gray-500 dark:text-gray-400">
+            {t("common.accessDeniedDesc")}
           </p>
           <Link
             href="/dashboard"
-            className="mt-4 inline-block text-blue-500 hover:text-blue-600"
+            className="mt-4 inline-block text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
           >
-            Go to Dashboard
+            {t("common.goToDashboard")}
           </Link>
         </div>
       </div>
@@ -170,7 +166,7 @@ export default function EmployeesPage() {
       if (!json.success) {
         throw new Error(json.error || "Failed to save policies");
       }
-      alert("Policies saved successfully");
+      alert(t("employees.policiesSaved"));
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to save policies");
     } finally {
@@ -182,9 +178,9 @@ export default function EmployeesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
-          <p className="text-gray-500">
-            Manage employees and their leave policies.
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t("employees.title")}</h1>
+          <p className="text-gray-500 dark:text-gray-400">
+            {t("employees.description")}
           </p>
         </div>
         <button
@@ -204,7 +200,7 @@ export default function EmployeesPage() {
               d="M12 4.5v15m7.5-7.5h-15"
             />
           </svg>
-          Add Employee
+          {t("employees.addEmployee")}
         </button>
       </div>
 
@@ -214,32 +210,32 @@ export default function EmployeesPage() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="h-16 animate-pulse rounded-lg border border-gray-200 bg-gray-100"
+              className="h-16 animate-pulse rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800"
             />
           ))}
         </div>
       ) : employees.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">
-          No employees found. Add your first employee to get started.
+        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+          {t("employees.noEmployees")}
         </div>
       ) : (
         <div className="space-y-2">
           {employees.map((emp) => (
             <div
               key={emp.id}
-              className="overflow-hidden rounded-xl border border-gray-200 bg-white"
+              className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
             >
               {/* Row */}
               <button
                 onClick={() => toggleExpand(emp.id)}
-                className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50"
+                className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
               >
                 <div className="flex items-center gap-4">
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {emp.name}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
                       {truncateAddress(emp.wallet_address)}
                     </p>
                   </div>
@@ -248,17 +244,17 @@ export default function EmployeesPage() {
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                       emp.role === "admin"
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-blue-100 text-blue-700"
+                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
                     }`}
                   >
                     {emp.role}
                   </span>
-                  <span className="hidden text-sm text-gray-500 sm:inline">
-                    Since {format(new Date(emp.start_date), "MMM yyyy")}
+                  <span className="hidden text-sm text-gray-500 sm:inline dark:text-gray-400">
+                    {t("employees.since")} {format(new Date(emp.start_date), "MMM yyyy", { locale: dateFnsLocale })}
                   </span>
                   <svg
-                    className={`h-5 w-5 text-gray-400 transition-transform ${
+                    className={`h-5 w-5 text-gray-400 transition-transform dark:text-gray-500 ${
                       expandedId === emp.id ? "rotate-180" : ""
                     }`}
                     fill="none"
@@ -277,21 +273,21 @@ export default function EmployeesPage() {
 
               {/* Expanded policies */}
               {expandedId === emp.id && (
-                <div className="border-t border-gray-100 bg-gray-50 px-6 py-4">
+                <div className="border-t border-gray-100 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900/50">
                   {policiesLoading ? (
                     <div className="flex items-center justify-center py-4">
-                      <div className="h-6 w-6 animate-spin rounded-full border-3 border-gray-200 border-t-blue-500" />
+                      <div className="h-6 w-6 animate-spin rounded-full border-3 border-gray-200 border-t-blue-500 dark:border-gray-700 dark:border-t-blue-400" />
                     </div>
                   ) : (
                     <div>
-                      <h3 className="mb-3 text-sm font-semibold text-gray-700">
-                        Leave Policies
+                      <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {t("employees.leavePolicies")}
                       </h3>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {LEAVE_TYPES.map((type) => (
                           <div key={type} className="flex items-center gap-2">
-                            <label className="w-20 text-sm text-gray-600">
-                              {LEAVE_TYPE_LABELS[type]}
+                            <label className="w-20 text-sm text-gray-600 dark:text-gray-400">
+                              {t(`leave.types.${type}` as `leave.types.${LeaveType}`)}
                             </label>
                             <input
                               type="number"
@@ -304,9 +300,9 @@ export default function EmployeesPage() {
                                   [type]: parseInt(e.target.value) || 0,
                                 }))
                               }
-                              className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                              className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                             />
-                            <span className="text-xs text-gray-400">days</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">{t("employees.daysLabel")}</span>
                           </div>
                         ))}
                       </div>
@@ -316,7 +312,7 @@ export default function EmployeesPage() {
                           disabled={policySaving}
                           className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
                         >
-                          {policySaving ? "Saving..." : "Save Policies"}
+                          {policySaving ? t("employees.saving") : t("employees.savePolicies")}
                         </button>
                       </div>
                     </div>
@@ -358,9 +354,9 @@ export default function EmployeesPage() {
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <DialogPanel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                  <DialogTitle className="text-lg font-bold text-gray-900">
-                    Add Employee
+                <DialogPanel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800">
+                  <DialogTitle className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                    {t("employees.addEmployeeTitle")}
                   </DialogTitle>
 
                   <form
@@ -368,8 +364,8 @@ export default function EmployeesPage() {
                     className="mt-4 space-y-4"
                   >
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Name
+                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t("employees.name")}
                       </label>
                       <input
                         type="text"
@@ -378,14 +374,14 @@ export default function EmployeesPage() {
                         onChange={(e) =>
                           setAddForm((f) => ({ ...f, name: e.target.value }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-                        placeholder="John Doe"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        placeholder={t("employees.namePlaceholder")}
                       />
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Wallet Address
+                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t("employees.walletAddress")}
                       </label>
                       <input
                         type="text"
@@ -397,14 +393,14 @@ export default function EmployeesPage() {
                             wallet_address: e.target.value,
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                         placeholder="0x..."
                       />
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Role
+                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t("employees.role")}
                       </label>
                       <select
                         value={addForm.role}
@@ -414,16 +410,16 @@ export default function EmployeesPage() {
                             role: e.target.value as "admin" | "employee",
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       >
-                        <option value="employee">Employee</option>
-                        <option value="admin">Admin</option>
+                        <option value="employee">{t("employees.roleEmployee")}</option>
+                        <option value="admin">{t("employees.roleAdmin")}</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Start Date
+                      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t("employees.startDate")}
                       </label>
                       <input
                         type="date"
@@ -435,12 +431,12 @@ export default function EmployeesPage() {
                             start_date: e.target.value,
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                     </div>
 
                     {addError && (
-                      <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                      <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
                         {addError}
                       </div>
                     )}
@@ -449,16 +445,16 @@ export default function EmployeesPage() {
                       <button
                         type="button"
                         onClick={() => setShowAddModal(false)}
-                        className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                        className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                       >
-                        Cancel
+                        {t("common.cancel")}
                       </button>
                       <button
                         type="submit"
                         disabled={addLoading}
                         className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
                       >
-                        {addLoading ? "Adding..." : "Add Employee"}
+                        {addLoading ? t("employees.adding") : t("employees.addEmployee")}
                       </button>
                     </div>
                   </form>
