@@ -5,7 +5,7 @@ const PUBLIC_PAGES = ["/login"];
 const SESSION_COOKIE = "vaca_session";
 const STATE_CHANGING_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hasSession = req.cookies.has(SESSION_COOKIE);
 
