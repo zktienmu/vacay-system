@@ -84,7 +84,7 @@ export const PATCH = withAuth(
           ip_address:
             req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
             null,
-        }).catch(() => {});
+        }).catch((err) => console.error("[AuditLog] Failed:", err));
 
         // Fire-and-forget: clean up calendar event
         onLeaveRequestCancelled(leaveRequest).catch(() => {});
@@ -137,7 +137,7 @@ export const PATCH = withAuth(
         },
         ip_address:
           req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-      }).catch(() => {});
+      }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       // Fire-and-forget: Slack + Google Calendar integrations
       if (parsed.data.status === "approved") {

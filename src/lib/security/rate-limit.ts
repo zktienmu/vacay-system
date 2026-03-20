@@ -8,6 +8,10 @@ interface RateLimitEntry {
 /**
  * Simple in-memory rate limiter suitable for a small team.
  * Uses a Map with TTL-based cleanup.
+ *
+ * NOTE: In a serverless environment (e.g. Vercel), each instance gets its own
+ * memory, so this limiter is per-instance only. For production use, replace
+ * with a shared store such as Redis/Upstash (@upstash/ratelimit).
  */
 class RateLimiter {
   private store = new Map<string, RateLimitEntry>();
@@ -81,12 +85,21 @@ export const apiRateLimiter = new RateLimiter(60, 60_000);
 
 /**
  * Extract the client IP from the request.
+ * Prefers x-real-ip (set by Vercel/reverse proxy, harder to spoof),
+ * then falls back to the last IP in x-forwarded-for (added by the proxy).
  */
 export function getClientIp(req: Request): string {
+  // x-real-ip is set by Vercel/reverse proxy and is harder to spoof
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return realIp;
+
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0]!.trim();
+    // Only trust the last IP (added by the reverse proxy)
+    const ips = forwarded.split(",").map((ip) => ip.trim());
+    return ips[ips.length - 1]!;
   }
+
   // Fallback for local development
   return "127.0.0.1";
 }

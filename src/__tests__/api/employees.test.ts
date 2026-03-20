@@ -38,12 +38,15 @@ const mockGetEmployeeById = vi.fn()
 const mockUpdateEmployee = vi.fn()
 const mockInsertAuditLog = vi.fn(() => Promise.resolve())
 
+const mockGetAdminCount = vi.fn(() => Promise.resolve(2))
+
 vi.mock('@/lib/supabase/queries', () => ({
   getAllEmployees: (...args: unknown[]) => mockGetAllEmployees(...args),
   createEmployee: (...args: unknown[]) => mockCreateEmployee(...args),
   getEmployeeById: (...args: unknown[]) => mockGetEmployeeById(...args),
   updateEmployee: (...args: unknown[]) => mockUpdateEmployee(...args),
   insertAuditLog: (...args: unknown[]) => mockInsertAuditLog(...args),
+  getAdminCount: (...args: unknown[]) => mockGetAdminCount(...args),
 }))
 
 describe('GET /api/employees', () => {
@@ -57,6 +60,11 @@ describe('GET /api/employees', () => {
       name: 'Admin User',
       role: 'admin',
     }
+    // withAuth middleware re-validates role from DB
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'admin', name: 'Admin User' }))
+      return Promise.resolve(null)
+    })
     const mod = await import('@/app/api/employees/route')
     GET = mod.GET
   })
@@ -74,6 +82,11 @@ describe('GET /api/employees', () => {
 
   it('returns 403 for non-admin users', async () => {
     mockSessionData.role = 'employee'
+    // Middleware re-validates role from DB — return employee role
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'employee', name: 'Admin User' }))
+      return Promise.resolve(null)
+    })
 
     const req = new NextRequest('http://localhost/api/employees')
     const res = await GET(req, { params: Promise.resolve({}) })
@@ -108,6 +121,11 @@ describe('POST /api/employees', () => {
       name: 'Admin User',
       role: 'admin',
     }
+    // withAuth middleware re-validates role from DB
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'admin', name: 'Admin User' }))
+      return Promise.resolve(null)
+    })
     const mod = await import('@/app/api/employees/route')
     POST = mod.POST
   })
@@ -130,6 +148,11 @@ describe('POST /api/employees', () => {
 
   it('returns 403 for non-admin users', async () => {
     mockSessionData.role = 'employee'
+    // Middleware re-validates role from DB — return employee role
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'employee', name: 'Admin User' }))
+      return Promise.resolve(null)
+    })
 
     const req = new NextRequest('http://localhost/api/employees', {
       method: 'POST',
@@ -214,6 +237,11 @@ describe('PATCH /api/employees/[id]', () => {
       name: 'Admin User',
       role: 'admin',
     }
+    // withAuth middleware re-validates role from DB
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'admin', name: 'Admin User' }))
+      return Promise.resolve(null)
+    })
     const mod = await import('@/app/api/employees/[id]/route')
     PATCH = mod.PATCH
   })
@@ -234,6 +262,11 @@ describe('PATCH /api/employees/[id]', () => {
 
   it('returns 403 for non-admin users', async () => {
     mockSessionData.role = 'employee'
+    // Middleware re-validates role from DB — return employee role
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'employee', name: 'Admin User' }))
+      return Promise.resolve(null)
+    })
 
     const req = new NextRequest('http://localhost/api/employees/550e8400-e29b-41d4-a716-446655440000', {
       method: 'PATCH',
@@ -261,7 +294,11 @@ describe('PATCH /api/employees/[id]', () => {
   })
 
   it('returns 404 when employee not found', async () => {
-    mockGetEmployeeById.mockResolvedValue(null)
+    // Middleware call returns admin, handler call returns null (target not found)
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'admin', name: 'Admin User' }))
+      return Promise.resolve(null)
+    })
 
     const req = new NextRequest('http://localhost/api/employees/550e8400-e29b-41d4-a716-446655440000', {
       method: 'PATCH',
@@ -278,8 +315,11 @@ describe('PATCH /api/employees/[id]', () => {
 
   it('updates employee with valid data', async () => {
     const existing = mockEmployee({ id: '550e8400-e29b-41d4-a716-446655440000' })
-    mockGetEmployeeById.mockResolvedValue(existing)
     const updated = mockEmployee({ id: '550e8400-e29b-41d4-a716-446655440000', name: 'Updated Name' })
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'admin', name: 'Admin User' }))
+      return Promise.resolve(existing)
+    })
     mockUpdateEmployee.mockResolvedValue(updated)
 
     const req = new NextRequest('http://localhost/api/employees/550e8400-e29b-41d4-a716-446655440000', {
@@ -312,7 +352,10 @@ describe('PATCH /api/employees/[id]', () => {
 
   it('returns 409 on duplicate wallet address', async () => {
     const existing = mockEmployee({ id: '550e8400-e29b-41d4-a716-446655440000' })
-    mockGetEmployeeById.mockResolvedValue(existing)
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'admin', name: 'Admin User' }))
+      return Promise.resolve(existing)
+    })
     mockUpdateEmployee.mockRejectedValue(new Error('duplicate key violation'))
 
     const req = new NextRequest('http://localhost/api/employees/550e8400-e29b-41d4-a716-446655440000', {

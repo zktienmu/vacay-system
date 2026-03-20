@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { SessionData } from "@/types";
 import { sessionOptions } from "@/lib/auth/session";
+import { getEmployeeById } from "@/lib/supabase/queries";
 
 type RouteHandlerContext = { params: Promise<Record<string, string>> };
 
@@ -25,6 +26,25 @@ export function withAuth(handler: AuthHandler) {
           { success: false, error: "Unauthorized" },
           { status: 401 },
         );
+      }
+
+      // Re-validate role from database on every request to detect
+      // role changes or employee deletion since the session was issued.
+      const employee = await getEmployeeById(session.employee_id);
+
+      if (!employee) {
+        // Employee was deleted — destroy session
+        session.destroy();
+        return NextResponse.json(
+          { success: false, error: "Unauthorized" },
+          { status: 401 },
+        );
+      }
+
+      if (employee.role !== session.role) {
+        // Role changed since login — update session
+        session.role = employee.role;
+        await session.save();
       }
 
       return handler(req, ctx, session);

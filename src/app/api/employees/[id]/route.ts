@@ -6,6 +6,7 @@ import {
   getEmployeeById,
   updateEmployee,
   insertAuditLog,
+  getAdminCount,
 } from "@/lib/supabase/queries";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -46,6 +47,23 @@ export const PATCH = withAdmin(
         );
       }
 
+      // Prevent demoting the last admin
+      if (
+        parsed.data.role === "employee" &&
+        existing.role === "admin"
+      ) {
+        const adminCount = await getAdminCount();
+        if (adminCount <= 1) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Cannot demote the last admin",
+            },
+            { status: 400 },
+          );
+        }
+      }
+
       const employee = await updateEmployee(id, parsed.data);
 
       await insertAuditLog({
@@ -56,7 +74,7 @@ export const PATCH = withAdmin(
         details: { updated_fields: Object.keys(parsed.data) },
         ip_address:
           req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-      }).catch(() => {});
+      }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       return NextResponse.json({ success: true, data: employee });
     } catch (err) {

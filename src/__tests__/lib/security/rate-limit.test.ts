@@ -2,11 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { authRateLimiter, apiRateLimiter, getClientIp } from '@/lib/security/rate-limit'
 
 describe('getClientIp', () => {
-  it('extracts IP from x-forwarded-for header', () => {
+  it('prefers x-real-ip over x-forwarded-for', () => {
+    const req = new Request('http://localhost', {
+      headers: { 'x-real-ip': '9.9.9.9', 'x-forwarded-for': '1.2.3.4, 5.6.7.8' },
+    })
+    expect(getClientIp(req)).toBe('9.9.9.9')
+  })
+
+  it('uses last IP from x-forwarded-for (proxy-added)', () => {
     const req = new Request('http://localhost', {
       headers: { 'x-forwarded-for': '1.2.3.4, 5.6.7.8' },
     })
-    expect(getClientIp(req)).toBe('1.2.3.4')
+    expect(getClientIp(req)).toBe('5.6.7.8')
   })
 
   it('returns single IP from x-forwarded-for', () => {
@@ -18,9 +25,9 @@ describe('getClientIp', () => {
 
   it('trims whitespace from forwarded IP', () => {
     const req = new Request('http://localhost', {
-      headers: { 'x-forwarded-for': '  1.2.3.4  , 5.6.7.8' },
+      headers: { 'x-forwarded-for': '  1.2.3.4  , 5.6.7.8  ' },
     })
-    expect(getClientIp(req)).toBe('1.2.3.4')
+    expect(getClientIp(req)).toBe('5.6.7.8')
   })
 
   it('falls back to 127.0.0.1 when no forwarded header', () => {

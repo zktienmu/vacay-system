@@ -157,7 +157,7 @@ export const POST = withAuth(
         details: { leave_type, start_date, end_date, days },
         ip_address:
           req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-      }).catch(() => {});
+      }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       // Fire-and-forget: notify admins via Slack
       onLeaveRequestCreated(leaveRequest).catch(() => {});

@@ -39,6 +39,7 @@ vi.mock('@/lib/auth/siwe', () => ({
 // Mock supabase queries
 vi.mock('@/lib/supabase/queries', () => ({
   getEmployeeByWallet: vi.fn(),
+  getEmployeeById: vi.fn(),
   insertAuditLog: vi.fn(() => Promise.resolve()),
 }))
 
@@ -144,6 +145,7 @@ describe('POST /api/auth/verify', () => {
     }))
     vi.doMock('@/lib/supabase/queries', () => ({
       getEmployeeByWallet: vi.fn(),
+      getEmployeeById: vi.fn(() => Promise.resolve(null)),
       insertAuditLog: vi.fn(() => Promise.resolve()),
     }))
     vi.doMock('@/lib/security/rate-limit', () => ({
@@ -333,6 +335,11 @@ describe('GET /api/auth/me', () => {
     vi.doMock('next/headers', () => ({
       cookies: vi.fn(() => Promise.resolve({})),
     }))
+    vi.doMock('@/lib/supabase/queries', () => ({
+      getEmployeeByWallet: vi.fn(),
+      getEmployeeById: vi.fn(() => Promise.resolve(null)),
+      insertAuditLog: vi.fn(() => Promise.resolve()),
+    }))
 
     const mod = await import('@/app/api/auth/me/route')
     const req = new NextRequest('http://localhost/api/auth/me')
@@ -373,6 +380,20 @@ describe('GET /api/auth/me', () => {
     }))
     vi.doMock('next/headers', () => ({
       cookies: vi.fn(() => Promise.resolve({})),
+    }))
+    vi.doMock('@/lib/supabase/queries', () => ({
+      getEmployeeByWallet: vi.fn(),
+      getEmployeeById: vi.fn(() => Promise.resolve({
+        id: 'emp-001',
+        wallet_address: '0xabc',
+        name: 'Test User',
+        role: 'employee',
+        slack_user_id: null,
+        start_date: '2024-01-01',
+        created_at: '',
+        updated_at: '',
+      })),
+      insertAuditLog: vi.fn(() => Promise.resolve()),
     }))
 
     const mod = await import('@/app/api/auth/me/route')
@@ -419,6 +440,7 @@ describe('POST /api/auth/logout', () => {
       cookies: vi.fn(() => Promise.resolve({})),
     }))
     vi.doMock('@/lib/supabase/queries', () => ({
+      getEmployeeById: vi.fn(() => Promise.resolve(null)),
       insertAuditLog: vi.fn(() => Promise.resolve()),
     }))
     vi.doMock('@/lib/security/rate-limit', () => ({

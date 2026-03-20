@@ -13,6 +13,21 @@ const leaveTypeLabels: Record<LeaveType, string> = {
 };
 
 /**
+ * Escape Slack mrkdwn special characters in user-supplied content.
+ * Prevents injection of formatting, links, or mentions via notes/text fields.
+ */
+export function escapeSlackMrkdwn(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\*/g, "\\*")
+    .replace(/_/g, "\\_")
+    .replace(/~/g, "\\~")
+    .replace(/`/g, "\\`");
+}
+
+/**
  * Format a leave type into a human-readable label.
  */
 export function formatLeaveType(type: LeaveType): string {
@@ -43,7 +58,7 @@ export function buildNewRequestBlocks(
 ): (KnownBlock | Block)[] {
   const typeLabel = formatLeaveType(request.leave_type);
   const dateRange = formatDateRange(request.start_date, request.end_date);
-  const notes = request.notes || "No notes";
+  const notes = request.notes ? escapeSlackMrkdwn(request.notes) : "No notes";
   const reviewUrl = `${appUrl}/admin/review/${request.id}`;
 
   return [

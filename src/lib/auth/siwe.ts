@@ -33,5 +33,14 @@ export async function verifySiweMessage(
     throw new Error("Domain mismatch");
   }
 
+  // Validate the URI matches the expected app URL origin
+  if (result.data.uri) {
+    const expectedOrigin = new URL(appUrl).origin;
+    const messageOrigin = new URL(result.data.uri).origin;
+    if (messageOrigin !== expectedOrigin) {
+      throw new Error("URI mismatch");
+    }
+  }
+
   return getAddress(result.data.address);
 }

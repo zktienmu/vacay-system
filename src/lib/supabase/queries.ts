@@ -1,4 +1,8 @@
 import "server-only";
+// ARCHITECTURE NOTE (C3): The app uses the Supabase service_role key, which
+// bypasses RLS. Authorization is enforced at the API layer instead (withAuth /
+// withAdmin middleware + employee_id filters in queries). All non-admin queries
+// must include appropriate employee_id filters to prevent cross-tenant access.
 import { getAddress } from "viem";
 import { supabase } from "@/lib/supabase/client";
 import type {
@@ -46,6 +50,16 @@ export async function getEmployeeById(
   }
 
   return data as Employee;
+}
+
+export async function getAdminCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from("employees")
+    .select("*", { count: "exact", head: true })
+    .eq("role", "admin");
+
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export async function getAllEmployees(): Promise<Employee[]> {
@@ -301,7 +315,7 @@ export async function getDelegatedLeaves(
 export async function insertAuditLog(
   logData: Omit<AuditLog, "id" | "timestamp">,
 ): Promise<void> {
-  const { error } = await supabase.from("audit_logs").insert(logData);
+  const { error } = await supabase.from("audit_log").insert(logData);
 
   if (error) throw error;
 }

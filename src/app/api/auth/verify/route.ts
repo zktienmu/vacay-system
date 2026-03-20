@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
         resource_id: "unknown",
         details: { reason: "SIWE verification failed" },
         ip_address: ip,
-      }).catch(() => {});
+      }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       return NextResponse.json(
         { success: false, error: "Signature verification failed" },
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         resource_id: "unknown",
         details: { reason: "Wallet not registered" },
         ip_address: ip,
-      }).catch(() => {});
+      }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       return NextResponse.json(
         { success: false, error: "Not registered" },
@@ -131,8 +131,9 @@ export async function POST(req: NextRequest) {
       resource_id: employee.id,
       details: { wallet_address: employee.wallet_address },
       ip_address: ip,
-    }).catch(() => {
+    }).catch((err) => {
       // Audit log failure should not break login
+      console.error("[AuditLog] Failed:", err);
     });
 
     return NextResponse.json({

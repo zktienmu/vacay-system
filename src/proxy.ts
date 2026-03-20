@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiRateLimiter, getClientIp } from "@/lib/security/rate-limit";
 
 const PUBLIC_API_ROUTES = ["/api/auth/nonce", "/api/auth/verify"];
 const PUBLIC_PAGES = ["/login"];
@@ -14,14 +15,31 @@ export function proxy(req: NextRequest) {
     const origin = req.headers.get("origin");
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
-    if (appUrl && origin) {
-      const expectedOrigin = new URL(appUrl).origin;
-      if (origin !== expectedOrigin) {
-        return NextResponse.json(
-          { success: false, error: "Forbidden" },
-          { status: 403 },
-        );
-      }
+    if (!origin || !appUrl) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+
+    const expectedOrigin = new URL(appUrl).origin;
+    if (origin !== expectedOrigin) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+  }
+
+  // Rate limit API routes (auth endpoints have their own stricter limiter)
+  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/auth/")) {
+    const ip = getClientIp(req);
+    const limit = apiRateLimiter.check(`api:${ip}`);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Too many requests" },
+        { status: 429 },
+      );
     }
   }
 

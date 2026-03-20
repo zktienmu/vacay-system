@@ -34,7 +34,7 @@ export const DELETE = withAdmin(
         details: null,
         ip_address:
           req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-      }).catch(() => {});
+      }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       return NextResponse.json({ success: true });
     } catch {

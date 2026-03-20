@@ -1,8 +1,21 @@
 import { SessionOptions } from "iron-session";
 import { SessionData } from "@/types";
 
+function getSessionSecret(): string {
+  const secret = process.env.SESSION_SECRET ?? "";
+  if (secret.length < 32) {
+    throw new Error(
+      "SESSION_SECRET must be at least 32 characters long. " +
+        `Current length: ${secret.length}`,
+    );
+  }
+  return secret;
+}
+
 export const sessionOptions: SessionOptions = {
-  password: process.env.SESSION_SECRET!,
+  get password() {
+    return getSessionSecret();
+  },
   cookieName: "vaca_session",
   cookieOptions: {
     httpOnly: true,

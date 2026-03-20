@@ -73,6 +73,12 @@ describe('GET /api/leave', () => {
       name: 'Test User',
       role: 'employee',
     }
+    // withAuth middleware re-validates role from DB
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'emp-001') return Promise.resolve(mockEmployee({ id: 'emp-001', role: 'employee', name: 'Test User' }))
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'admin', name: 'Admin User' }))
+      return Promise.resolve(null)
+    })
     const mod = await import('@/app/api/leave/route')
     GET = mod.GET
   })
@@ -130,6 +136,11 @@ describe('GET /api/leave', () => {
 
   it('admin can view all requests', async () => {
     mockSessionData.role = 'admin'
+    // Middleware re-validates role from DB — return admin role for this user
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'emp-001') return Promise.resolve(mockEmployee({ id: 'emp-001', role: 'admin', name: 'Test User' }))
+      return Promise.resolve(null)
+    })
     mockGetLeaveRequests.mockResolvedValue([])
 
     const req = new NextRequest('http://localhost/api/leave?all=true')
@@ -156,7 +167,8 @@ describe('POST /api/leave', () => {
     }
 
     // Default mock: employee exists with sufficient balance
-    mockGetEmployeeById.mockResolvedValue(mockEmployee({ start_date: '2024-01-15' }))
+    // Also handles middleware re-validation (first call with session employee_id)
+    mockGetEmployeeById.mockResolvedValue(mockEmployee({ id: 'emp-001', start_date: '2024-01-15', role: 'employee' }))
     mockGetLeavePolicies.mockResolvedValue([
       { id: 'p1', employee_id: 'emp-001', leave_type: 'annual', total_days: 20, expires_at: null, created_at: '', updated_at: '' },
     ])
@@ -321,6 +333,13 @@ describe('PATCH /api/leave/[id]', () => {
       name: 'Admin User',
       role: 'admin',
     }
+    // withAuth middleware re-validates role from DB
+    mockGetEmployeeById.mockImplementation((id: string) => {
+      if (id === 'admin-001') return Promise.resolve(mockEmployee({ id: 'admin-001', role: 'admin', name: 'Admin User' }))
+      if (id === 'emp-001') return Promise.resolve(mockEmployee({ id: 'emp-001', role: 'employee', name: 'Test User' }))
+      if (id === 'emp-999') return Promise.resolve(mockEmployee({ id: 'emp-999', role: 'employee', name: 'Other User' }))
+      return Promise.resolve(null)
+    })
 
     const mod = await import('@/app/api/leave/[id]/route')
     PATCH = mod.PATCH

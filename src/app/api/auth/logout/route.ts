@@ -24,8 +24,9 @@ export async function POST(req: NextRequest) {
         resource_id: employeeId,
         details: null,
         ip_address: getClientIp(req),
-      }).catch(() => {
+      }).catch((err) => {
         // Audit log failure should not break logout
+        console.error("[AuditLog] Failed:", err);
       });
     }
 

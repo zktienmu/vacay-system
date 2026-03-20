@@ -1,6 +1,11 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+// Provide a SESSION_SECRET for tests (must be >= 32 chars)
+if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
+  process.env.SESSION_SECRET = 'test-session-secret-at-least-32-chars-long!'
+}
+
 // Mock localStorage for jsdom
 if (typeof globalThis.localStorage === 'undefined' || typeof globalThis.localStorage.getItem !== 'function') {
   const store: Record<string, string> = {}
