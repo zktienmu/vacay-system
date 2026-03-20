@@ -6,6 +6,7 @@ import { useAppKitAccount } from "@reown/appkit/react";
 import { useSignMessage, useChainId } from "wagmi";
 import { SiweMessage } from "siwe";
 import { useSession } from "@/hooks/useSession";
+import { useTranslation } from "@/lib/i18n/context";
 import type { ApiResponse } from "@/types";
 
 type LoginStep = "idle" | "connecting" | "signing" | "verifying" | "done";
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const chainId = useChainId();
   const { signMessageAsync } = useSignMessage();
   const { isAuthenticated, isLoading, refetch } = useSession();
+  const { t } = useTranslation();
 
   const [step, setStep] = useState<LoginStep>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -100,11 +102,11 @@ export default function LoginPage() {
   const stepMessage = (() => {
     switch (step) {
       case "signing":
-        return "Please sign the message in your wallet...";
+        return t("login.signing");
       case "verifying":
-        return "Verifying your signature...";
+        return t("login.verifying");
       case "done":
-        return "Authenticated! Redirecting...";
+        return t("login.done");
       default:
         return null;
     }
@@ -112,22 +114,22 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500 dark:border-gray-700 dark:border-t-blue-400" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg">
+        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg dark:border-gray-700 dark:bg-gray-800">
           {/* Logo */}
           <div className="mb-8 text-center">
-            <h1 className="text-4xl font-bold text-gray-900">
-              Vaca {"\uD83D\uDC04"}
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
+              {t("login.title")} {"\uD83D\uDC04"}
             </h1>
-            <p className="mt-2 text-gray-500">Leave management for Dinngo</p>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">{t("login.subtitle")}</p>
           </div>
 
           {/* Connect wallet button */}
@@ -136,15 +138,15 @@ export default function LoginPage() {
 
             {/* Status messages */}
             {stepMessage && (
-              <div className="flex items-center gap-2 text-sm text-blue-600">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-500" />
+              <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-500 dark:border-blue-700 dark:border-t-blue-400" />
                 {stepMessage}
               </div>
             )}
 
             {/* Error message */}
             {error && (
-              <div className="w-full rounded-lg bg-red-50 p-3 text-center text-sm text-red-700">
+              <div className="w-full rounded-lg bg-red-50 p-3 text-center text-sm text-red-700 dark:bg-red-900/30 dark:text-red-300">
                 {error}
               </div>
             )}
@@ -157,7 +159,7 @@ export default function LoginPage() {
                 }}
                 className="rounded-lg bg-blue-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
               >
-                Sign In
+                {t("login.signIn")}
               </button>
             )}
 
@@ -169,7 +171,7 @@ export default function LoginPage() {
                 }}
                 className="rounded-lg bg-blue-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
               >
-                Try Again
+                {t("login.tryAgain")}
               </button>
             )}
           </div>

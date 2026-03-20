@@ -18,15 +18,36 @@ export const metadata: Metadata = {
   description: "Leave management system for Dinngo",
 };
 
+// Inline script to prevent flash of wrong theme
+const themeScript = `
+(function() {
+  try {
+    var theme = localStorage.getItem('vaca-theme');
+    if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+    var locale = localStorage.getItem('vaca-locale');
+    if (locale === 'en') {
+      document.documentElement.lang = 'en';
+    } else {
+      document.documentElement.lang = 'zh-TW';
+    }
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-TW" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100`}
       >
         <Providers>{children}</Providers>
       </body>

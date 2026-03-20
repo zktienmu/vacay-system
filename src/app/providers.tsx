@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, type Config } from "wagmi";
 import { AppKitProvider } from "@reown/appkit/react";
 import { wagmiAdapter, networks } from "@/lib/wagmi";
+import { I18nProvider } from "@/lib/i18n/context";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,7 +35,9 @@ export default function Providers({ children }: { children: ReactNode }) {
           networks={networks}
           adapters={[wagmiAdapter]}
         >
-          {children}
+          <I18nProvider>
+            {children}
+          </I18nProvider>
         </AppKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
