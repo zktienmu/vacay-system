@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SessionData } from "@/types";
 import { withAdmin } from "@/lib/auth/middleware";
-import { upsertPolicySchema } from "@/lib/leave/validation";
+import { upsertPoliciesBatchSchema } from "@/lib/leave/validation";
 import {
   getEmployeeById,
   getLeavePolicies,
@@ -63,7 +63,7 @@ export const PUT = withAdmin(
       }
 
       const body = await req.json();
-      const parsed = upsertPolicySchema.safeParse(body);
+      const parsed = upsertPoliciesBatchSchema.safeParse(body);
 
       if (!parsed.success) {
         const firstError =
@@ -82,28 +82,34 @@ export const PUT = withAdmin(
         );
       }
 
-      const policy = await upsertLeavePolicy({
-        employee_id: id,
-        leave_type: parsed.data.leave_type,
-        total_days: parsed.data.total_days,
-        expires_at: parsed.data.expires_at ?? null,
-      });
+      const results = [];
+      for (const p of parsed.data.policies) {
+        const policy = await upsertLeavePolicy({
+          employee_id: id,
+          leave_type: p.leave_type,
+          total_days: p.total_days,
+          expires_at: p.expires_at ?? null,
+        });
+        results.push(policy);
+      }
 
       await insertAuditLog({
         actor_id: session.employee_id,
-        action: "policy.upsert",
+        action: "policy.upsert_batch",
         resource_type: "leave_policy",
-        resource_id: policy.id,
+        resource_id: id,
         details: {
           employee_id: id,
-          leave_type: parsed.data.leave_type,
-          total_days: parsed.data.total_days,
+          policies: parsed.data.policies.map((p) => ({
+            leave_type: p.leave_type,
+            total_days: p.total_days,
+          })),
         },
         ip_address:
           req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
-      return NextResponse.json({ success: true, data: policy });
+      return NextResponse.json({ success: true, data: results });
     } catch {
       return NextResponse.json(
         { success: false, error: "Failed to upsert policy" },

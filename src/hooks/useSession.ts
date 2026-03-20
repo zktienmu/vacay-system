@@ -30,6 +30,7 @@ export function useSession() {
     await fetch("/api/auth/logout", { method: "POST" });
     queryClient.invalidateQueries({ queryKey: ["session"] });
     queryClient.clear();
+    window.location.href = "/login";
   }, [queryClient]);
 
   return {

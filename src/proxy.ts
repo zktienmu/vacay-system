@@ -53,21 +53,10 @@ export function proxy(req: NextRequest) {
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()",
   );
+  // CSP temporarily relaxed for Reown AppKit compatibility — tighten in production
   response.headers.set(
     "Content-Security-Policy",
-    [
-      "default-src 'self'",
-      // Next.js requires unsafe-eval in dev; scripts from WalletConnect
-      "script-src 'self' 'unsafe-inline' https://*.walletconnect.com https://*.reown.com",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https:",
-      "font-src 'self' data:",
-      "connect-src 'self' https://*.walletconnect.com https://*.reown.com wss://*.walletconnect.com wss://*.reown.com https://*.supabase.co",
-      "frame-src 'self' https://*.walletconnect.com https://*.reown.com",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join("; "),
+    "default-src * 'unsafe-inline' 'unsafe-eval' data: blob: wss:; frame-ancestors 'none'",
   );
   response.headers.set(
     "Strict-Transport-Security",
