@@ -8,6 +8,7 @@ import type {
   LeaveType,
   LeaveStatus,
   AuditLog,
+  PublicHoliday,
 } from "@/types";
 
 // === Employees ===
@@ -223,6 +224,76 @@ export async function getApprovedDaysInPeriod(
     (sum: number, row: { days: number }) => sum + row.days,
     0,
   );
+}
+
+// === Public Holidays ===
+
+export async function getPublicHolidays(year?: number): Promise<PublicHoliday[]> {
+  let query = supabase
+    .from("public_holidays")
+    .select("*")
+    .order("date", { ascending: true });
+
+  if (year) {
+    query = query.eq("year", year);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as PublicHoliday[];
+}
+
+export async function getPublicHolidayDatesInRange(
+  startDate: string,
+  endDate: string,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("public_holidays")
+    .select("date")
+    .gte("date", startDate)
+    .lte("date", endDate);
+
+  if (error) throw error;
+  return (data ?? []).map((row: { date: string }) => row.date);
+}
+
+export async function createPublicHoliday(
+  holidayData: Omit<PublicHoliday, "id" | "created_at" | "updated_at">,
+): Promise<PublicHoliday> {
+  const { data, error } = await supabase
+    .from("public_holidays")
+    .insert(holidayData)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data as PublicHoliday;
+}
+
+export async function deletePublicHoliday(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("public_holidays")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+// === Delegated Leaves ===
+
+export async function getDelegatedLeaves(
+  delegateId: string,
+): Promise<LeaveRequest[]> {
+  const { data, error } = await supabase
+    .from("leave_requests")
+    .select("*")
+    .eq("delegate_id", delegateId)
+    .eq("status", "approved")
+    .gte("end_date", new Date().toISOString().split("T")[0])
+    .order("start_date", { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as LeaveRequest[];
 }
 
 // === Audit Log ===

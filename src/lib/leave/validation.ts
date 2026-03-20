@@ -69,6 +69,15 @@ export const updateEmployeeSchema = z.object({
   role: z.enum(roles).optional(),
 });
 
+// === Public Holidays ===
+
+export const createHolidaySchema = z.object({
+  date: isoDate,
+  name: z.string().min(1).max(200),
+  description: z.string().max(500).nullable().optional(),
+  year: z.number().int().min(2000).max(2100),
+});
+
 // === Leave Policies ===
 
 export const upsertPolicySchema = z.object({

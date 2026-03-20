@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SessionData } from "@/types";
 import { withAuth } from "@/lib/auth/middleware";
 import { createLeaveRequestSchema } from "@/lib/leave/validation";
-import { calculateWorkingDays, getLeaveBalance } from "@/lib/leave/balance";
+import { calculateWorkingDaysExcludingHolidays, getLeaveBalance } from "@/lib/leave/balance";
 import {
   getLeaveRequests,
   createLeaveRequest,
@@ -88,7 +88,7 @@ export const POST = withAuth(
         );
       }
 
-      const days = calculateWorkingDays(start_date, end_date);
+      const days = await calculateWorkingDaysExcludingHolidays(start_date, end_date);
 
       if (days === 0) {
         return NextResponse.json(

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useSession } from "@/hooks/useSession";
@@ -8,11 +9,36 @@ import { useLeaveRequests } from "@/hooks/useLeaveRequests";
 import BalanceCard from "@/components/BalanceCard";
 import LeaveStatusBadge from "@/components/LeaveStatusBadge";
 import LeaveTypeIcon from "@/components/LeaveTypeIcon";
+import type { LeaveRequest, ApiResponse } from "@/types";
+
+interface DelegatedLeave extends LeaveRequest {
+  employee: { id: string; name: string } | null;
+}
 
 export default function DashboardPage() {
   const { session } = useSession();
   const { balances, isLoading: balancesLoading } = useLeaveBalance();
   const { requests, isLoading: requestsLoading } = useLeaveRequests();
+  const [delegatedLeaves, setDelegatedLeaves] = useState<DelegatedLeave[]>([]);
+  const [delegatedLoading, setDelegatedLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDelegated() {
+      try {
+        const res = await fetch("/api/leave/delegated");
+        const json: ApiResponse<DelegatedLeave[]> = await res.json();
+        if (json.success && json.data) {
+          setDelegatedLeaves(json.data);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setDelegatedLoading(false);
+      }
+    }
+
+    fetchDelegated();
+  }, []);
 
   const recentRequests = requests.slice(0, 5);
 
@@ -73,6 +99,87 @@ export default function DashboardPage() {
             {balances.map((balance) => (
               <BalanceCard key={balance.leave_type} balance={balance} />
             ))}
+          </div>
+        )}
+      </section>
+
+      {/* Delegated to me */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          Delegated To Me
+        </h2>
+        {delegatedLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-16 animate-pulse rounded-lg border border-gray-200 bg-gray-100"
+              />
+            ))}
+          </div>
+        ) : delegatedLeaves.length === 0 ? (
+          <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">
+            No one has delegated work to you right now.
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <div className="hidden md:block">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-3">Requester</th>
+                    <th className="px-6 py-3">Type</th>
+                    <th className="px-6 py-3">Dates</th>
+                    <th className="px-6 py-3">Days</th>
+                    <th className="px-6 py-3">Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {delegatedLeaves.map((leave) => (
+                    <tr key={leave.id} className="hover:bg-gray-50">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                        {leave.employee?.name || "Unknown"}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <LeaveTypeIcon type={leave.leave_type} showLabel />
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                        {format(new Date(leave.start_date), "MMM d")} -{" "}
+                        {format(new Date(leave.end_date), "MMM d, yyyy")}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                        {leave.days} day{leave.days !== 1 ? "s" : ""}
+                      </td>
+                      <td className="max-w-xs truncate px-6 py-4 text-sm text-gray-500">
+                        {leave.notes || "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="divide-y divide-gray-100 md:hidden">
+              {delegatedLeaves.map((leave) => (
+                <div key={leave.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900">
+                      {leave.employee?.name || "Unknown"}
+                    </span>
+                    <LeaveTypeIcon type={leave.leave_type} showLabel />
+                  </div>
+                  <div className="mt-1 text-sm text-gray-600">
+                    {format(new Date(leave.start_date), "MMM d")} -{" "}
+                    {format(new Date(leave.end_date), "MMM d, yyyy")} ({leave.days}{" "}
+                    day{leave.days !== 1 ? "s" : ""})
+                  </div>
+                  {leave.notes && (
+                    <p className="mt-1 text-sm text-gray-500 line-clamp-2">
+                      {leave.notes}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </section>

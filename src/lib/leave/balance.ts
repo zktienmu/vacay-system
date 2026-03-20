@@ -2,6 +2,7 @@ import { LeaveType, LeaveBalance } from "@/types";
 import {
   getLeavePolicies,
   getApprovedDaysInPeriod,
+  getPublicHolidayDatesInRange,
 } from "@/lib/supabase/queries";
 
 export function calculateAnniversaryPeriod(
@@ -43,6 +44,7 @@ export function calculateAnniversaryPeriod(
 export function calculateWorkingDays(
   startDate: string,
   endDate: string,
+  holidayDates?: Set<string>,
 ): number {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -56,12 +58,24 @@ export function calculateWorkingDays(
     const day = current.getDay();
     // Monday=1, Tuesday=2, ..., Friday=5. Exclude Saturday=6 and Sunday=0.
     if (day !== 0 && day !== 6) {
-      count++;
+      // Also exclude public holidays
+      if (!holidayDates || !holidayDates.has(formatDate(current))) {
+        count++;
+      }
     }
     current.setDate(current.getDate() + 1);
   }
 
   return count;
+}
+
+export async function calculateWorkingDaysExcludingHolidays(
+  startDate: string,
+  endDate: string,
+): Promise<number> {
+  const holidayDateStrings = await getPublicHolidayDatesInRange(startDate, endDate);
+  const holidayDates = new Set(holidayDateStrings);
+  return calculateWorkingDays(startDate, endDate, holidayDates);
 }
 
 export async function getLeaveBalance(

@@ -68,6 +68,16 @@ export interface AuditLog {
   ip_address: string | null;
 }
 
+export interface PublicHoliday {
+  id: string;
+  date: string; // ISO date
+  name: string;
+  description: string | null;
+  year: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // === API ===
 export interface ApiResponse<T = unknown> {
   success: boolean;
