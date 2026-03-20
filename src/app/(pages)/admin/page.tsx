@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { zhTW as zhTWLocale } from "date-fns/locale/zh-TW";
@@ -9,16 +9,25 @@ import { useLeaveRequests } from "@/hooks/useLeaveRequests";
 import LeaveStatusBadge from "@/components/LeaveStatusBadge";
 import LeaveTypeIcon from "@/components/LeaveTypeIcon";
 import { useTranslation } from "@/lib/i18n/context";
+import type { ApiResponse } from "@/types";
 
 export default function AdminReviewPage() {
   const { session } = useSession();
-  const { requests, isLoading } = useLeaveRequests(true);
+  const { requests, isLoading, refetch } = useLeaveRequests(true);
   const { t, locale } = useTranslation();
 
   const dateFnsLocale = locale === "zh-TW" ? zhTWLocale : undefined;
 
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
   function formatDate(date: string, fmt: string) {
     return format(new Date(date), fmt, { locale: dateFnsLocale });
+  }
+
+  function formatDays(n: number) {
+    if (locale === "zh-TW") return `${n} ${t("common.day")}`;
+    return `${n} day${n !== 1 ? "s" : ""}`;
   }
 
   const pendingRequests = useMemo(
@@ -57,9 +66,33 @@ export default function AdminReviewPage() {
     );
   }
 
-  function formatDays(n: number) {
-    if (locale === "zh-TW") return `${n} ${t("common.day")}`;
-    return `${n} day${n !== 1 ? "s" : ""}`;
+  async function handleAction(id: string, status: "approved" | "rejected") {
+    const confirmMsg =
+      status === "approved"
+        ? t("admin.confirmApprove")
+        : t("admin.confirmReject");
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/leave/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const json: ApiResponse = await res.json();
+      if (!json.success) {
+        alert(json.error || t("admin.failedUpdate"));
+        return;
+      }
+      setExpandedId(null);
+      refetch();
+    } catch {
+      alert(t("admin.failedUpdate"));
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   return (
@@ -92,80 +125,156 @@ export default function AdminReviewPage() {
             {t("admin.noPending")}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-            {/* Desktop table */}
-            <div className="hidden lg:block">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400">
-                    <th className="px-6 py-3">{t("admin.employee")}</th>
-                    <th className="px-6 py-3">{t("admin.type")}</th>
-                    <th className="px-6 py-3">{t("admin.dates")}</th>
-                    <th className="px-6 py-3">{t("admin.daysCol")}</th>
-                    <th className="px-6 py-3">{t("admin.notesCol")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {pendingRequests.map((req) => (
-                    <tr key={req.id} className="group cursor-pointer transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-900/10">
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                        <Link href={`/admin/review/${req.id}`} className="block">
+          <div className="space-y-2">
+            {pendingRequests.map((req) => {
+              const isExpanded = expandedId === req.id;
+              return (
+                <div
+                  key={req.id}
+                  className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+                >
+                  {/* Summary row */}
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : req.id)}
+                    className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                           {req.employee?.name || t("common.unknown")}
-                        </Link>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <Link href={`/admin/review/${req.id}`} className="block">
-                          <LeaveTypeIcon type={req.leave_type} showLabel />
-                        </Link>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        <Link href={`/admin/review/${req.id}`} className="block">
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                           {formatDate(req.start_date, "MMM d")} -{" "}
                           {formatDate(req.end_date, "MMM d, yyyy")}
-                        </Link>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        <Link href={`/admin/review/${req.id}`} className="block">
-                          {req.days}
-                        </Link>
-                      </td>
-                      <td className="max-w-xs truncate px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                        <Link href={`/admin/review/${req.id}`} className="block">
-                          {req.notes || "-"}
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                          {" · "}
+                          {formatDays(req.days)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <LeaveTypeIcon type={req.leave_type} showLabel />
+                      <svg
+                        className={`h-5 w-5 text-gray-400 transition-transform dark:text-gray-500 ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                        />
+                      </svg>
+                    </div>
+                  </button>
 
-            {/* Mobile cards */}
-            <div className="divide-y divide-gray-100 lg:hidden dark:divide-gray-700">
-              {pendingRequests.map((req) => (
-                <Link
-                  key={req.id}
-                  href={`/admin/review/${req.id}`}
-                  className="block p-4 transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {req.employee?.name || t("common.unknown")}
-                    </span>
-                    <LeaveTypeIcon type={req.leave_type} showLabel />
-                  </div>
-                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    {formatDate(req.start_date, "MMM d")} -{" "}
-                    {formatDate(req.end_date, "MMM d, yyyy")} ({formatDays(req.days)})
-                  </div>
-                  {req.notes && (
-                    <p className="mt-1 text-sm text-gray-500 line-clamp-1 dark:text-gray-400">
-                      {req.notes}
-                    </p>
+                  {/* Expanded detail */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-100 bg-gray-50 px-6 py-5 dark:border-gray-700 dark:bg-gray-900/50">
+                      <div className="space-y-3">
+                        {/* Dates */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {t("review.dates")}
+                          </span>
+                          <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
+                            {formatDate(req.start_date, "MMMM d, yyyy")} -{" "}
+                            {formatDate(req.end_date, "MMMM d, yyyy")}
+                          </span>
+                        </div>
+
+                        {/* Working days */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {t("review.workingDays")}
+                          </span>
+                          <span className="col-span-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {formatDays(req.days)}
+                          </span>
+                        </div>
+
+                        {/* Delegate */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {t("review.delegate")}
+                          </span>
+                          <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
+                            {req.delegate?.name || t("review.noneAssigned")}
+                          </span>
+                        </div>
+
+                        {/* Handover URL */}
+                        {req.handover_url && (
+                          <div className="grid grid-cols-3 gap-2">
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              {locale === "zh-TW" ? "交接事項" : "Handover"}
+                            </span>
+                            <span className="col-span-2 text-sm">
+                              <a
+                                href={req.handover_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                              >
+                                {req.handover_url}
+                              </a>
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Notes */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {t("review.notes")}
+                          </span>
+                          <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
+                            {req.notes || t("common.noNotes")}
+                          </span>
+                        </div>
+
+                        {/* Submitted */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {t("review.submitted")}
+                          </span>
+                          <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
+                            {formatDate(req.created_at, "MMMM d, yyyy 'at' h:mm a")}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Approve / Reject buttons */}
+                      <div className="mt-5 flex items-center justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
+                        <button
+                          onClick={() => handleAction(req.id, "rejected")}
+                          disabled={actionLoading}
+                          className="rounded-lg bg-red-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                        >
+                          {t("admin.reject")}
+                        </button>
+                        <button
+                          onClick={() => handleAction(req.id, "approved")}
+                          disabled={actionLoading}
+                          className="rounded-lg bg-green-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:opacity-50"
+                        >
+                          {actionLoading ? (
+                            <span className="flex items-center gap-2">
+                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                              {t("review.processing")}
+                            </span>
+                          ) : (
+                            t("admin.approve")
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   )}
-                </Link>
-              ))}
-            </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
