@@ -11,7 +11,7 @@ import {
   addDays,
 } from "date-fns";
 import { useLeaveBalance } from "@/hooks/useLeaveBalance";
-import { useEmployees } from "@/hooks/useEmployees";
+import { useSlackUsers } from "@/hooks/useSlackUsers";
 import { useSession } from "@/hooks/useSession";
 import { getLeaveTypeEmoji } from "@/components/LeaveTypeIcon";
 import { useTranslation } from "@/lib/i18n/context";
@@ -48,7 +48,7 @@ export default function NewLeavePage() {
   const queryClient = useQueryClient();
   const { session } = useSession();
   const { balances, isLoading: balancesLoading } = useLeaveBalance();
-  const { employees, isLoading: employeesLoading } = useEmployees();
+  const { slackUsers, isLoading: slackUsersLoading } = useSlackUsers();
   const { t, locale } = useTranslation();
 
   const [leaveType, setLeaveType] = useState<LeaveType>("annual");
@@ -71,9 +71,8 @@ export default function NewLeavePage() {
       ? currentBalance.remaining_days - workingDays
       : null;
 
-  const otherEmployees = employees.filter(
-    (e) => e.id !== session?.employee_id
-  );
+  // slackUsers already excludes current user (filtered server-side)
+  const delegateCandidates = slackUsers.filter((u) => u.employee_id);
 
   const leaveTypeLabel = (type: LeaveType) => t(`leave.types.${type}` as `leave.types.${LeaveType}`);
 
@@ -226,32 +225,30 @@ export default function NewLeavePage() {
         </div>
 
         {/* Working days calculation */}
-        {startDate && endDate && (
-          <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                {t("leave.workingDays")}
+        <div className={`rounded-lg p-4 ${startDate && endDate && workingDays > 0 ? "bg-blue-50 dark:bg-blue-900/20" : "bg-gray-50 dark:bg-gray-700/50"}`}>
+          <div className="flex items-center justify-between">
+            <span className={`text-sm font-medium ${startDate && endDate && workingDays > 0 ? "text-blue-700 dark:text-blue-300" : "text-gray-500 dark:text-gray-400"}`}>
+              {t("leave.workingDays")}
+            </span>
+            <span className={`text-lg font-bold ${startDate && endDate && workingDays > 0 ? "text-blue-900 dark:text-blue-100" : "text-gray-400 dark:text-gray-500"}`}>
+              {startDate && endDate ? formatDays(workingDays) : "—"}
+            </span>
+          </div>
+          {remainingAfter !== null && startDate && endDate && (
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-sm text-blue-600 dark:text-blue-400">
+                {t("leave.remainingAfter")}
               </span>
-              <span className="text-lg font-bold text-blue-900 dark:text-blue-100">
-                {formatDays(workingDays)}
+              <span
+                className={`text-sm font-semibold ${
+                  remainingAfter < 0 ? "text-red-600 dark:text-red-400" : "text-blue-900 dark:text-blue-100"
+                }`}
+              >
+                {formatDays(remainingAfter)}
               </span>
             </div>
-            {remainingAfter !== null && (
-              <div className="mt-1 flex items-center justify-between">
-                <span className="text-sm text-blue-600 dark:text-blue-400">
-                  {t("leave.remainingAfter")}
-                </span>
-                <span
-                  className={`text-sm font-semibold ${
-                    remainingAfter < 0 ? "text-red-600 dark:text-red-400" : "text-blue-900 dark:text-blue-100"
-                  }`}
-                >
-                  {formatDays(remainingAfter)}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Delegate */}
         <div>
@@ -262,12 +259,12 @@ export default function NewLeavePage() {
             value={delegateId}
             onChange={(e) => setDelegateId(e.target.value)}
             className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            disabled={employeesLoading}
+            disabled={slackUsersLoading}
           >
             <option value="">{t("common.noDelegate")}</option>
-            {otherEmployees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.name}
+            {delegateCandidates.map((u) => (
+              <option key={u.employee_id} value={u.employee_id!}>
+                {u.display_name || u.name}
               </option>
             ))}
           </select>
@@ -276,31 +273,35 @@ export default function NewLeavePage() {
           </p>
         </div>
 
-        {/* Handover URL (required when >= 3 working days) */}
-        {handoverRequired && (
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {locale === "zh-TW" ? "交接事項" : "Handover Document URL"}{" "}
-              <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="url"
-              value={handoverUrl}
-              onChange={(e) => setHandoverUrl(e.target.value)}
-              placeholder="https://..."
-              className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:bg-gray-700 dark:text-gray-100 ${
-                handoverRequired && !handoverUrl.trim()
-                  ? "border-red-400 dark:border-red-500"
-                  : "border-gray-300 dark:border-gray-600"
-              }`}
-            />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {locale === "zh-TW"
-                ? "連續請假 3 天以上需提供交接事項文件連結"
-                : "A handover document URL is required for leaves of 3 or more working days"}
-            </p>
-          </div>
-        )}
+        {/* Handover URL (always visible, required when >= 3 working days) */}
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {locale === "zh-TW" ? "交接事項" : "Handover Document URL"}
+            {handoverRequired && (
+              <span className="ml-1 text-red-500">*</span>
+            )}
+          </label>
+          <input
+            type="url"
+            value={handoverUrl}
+            onChange={(e) => setHandoverUrl(e.target.value)}
+            placeholder="https://..."
+            className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:bg-gray-700 dark:text-gray-100 ${
+              handoverRequired && !handoverUrl.trim()
+                ? "border-red-400 dark:border-red-500"
+                : "border-gray-300 dark:border-gray-600"
+            }`}
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {handoverRequired
+              ? (locale === "zh-TW"
+                  ? "連續請假 3 天以上需提供交接事項文件連結"
+                  : "A handover document URL is required for leaves of 3 or more working days")
+              : (locale === "zh-TW"
+                  ? "選填，可提供交接事項文件連結"
+                  : "Optional — provide a handover document URL if needed")}
+          </p>
+        </div>
 
         {/* Notes */}
         <div>

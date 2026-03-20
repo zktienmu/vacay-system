@@ -7,7 +7,6 @@ import {
 } from "@/lib/leave/validation";
 import {
   getLeaveRequestById,
-  getEmployeeById,
   updateLeaveRequest,
   insertAuditLog,
 } from "@/lib/supabase/queries";
@@ -101,16 +100,7 @@ export const PATCH = withAuth(
         );
       }
 
-      // Managers can only approve/reject within their own department
-      if (session.role !== "admin" && session.is_manager) {
-        const requestEmployee = await getEmployeeById(leaveRequest.employee_id);
-        if (requestEmployee?.department !== session.department) {
-          return NextResponse.json(
-            { success: false, error: "Forbidden" },
-            { status: 403 },
-          );
-        }
-      }
+      // Any manager from any department can approve/reject leave requests
 
       const parsed = updateLeaveStatusSchema.safeParse(body);
       if (!parsed.success) {

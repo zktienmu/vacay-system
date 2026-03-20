@@ -31,12 +31,9 @@ export const GET = withAuth(
         end_date?: string;
       } = {};
 
-      // Only admins and managers can view all requests
-      // Managers only see their own department's requests
-      if (showAll && session.role === "admin") {
-        // Admin sees all
-      } else if (showAll && session.is_manager) {
-        // Manager sees own department — filter client-side after fetch
+      // Admins and managers can view all requests
+      if (showAll && (session.role === "admin" || session.is_manager)) {
+        // Admin or any manager sees all
       } else {
         filters.employee_id = session.employee_id;
       }
@@ -51,18 +48,7 @@ export const GET = withAuth(
       if (startDate && dateRegex.test(startDate)) filters.start_date = startDate;
       if (endDate && dateRegex.test(endDate)) filters.end_date = endDate;
 
-      let requests = await getLeaveRequests(filters);
-
-      // Manager department filter: fetch all then filter by department
-      if (showAll && session.is_manager && session.role !== "admin") {
-        const employeeIds = new Set<string>();
-        const { data: deptEmployees } = await (await import("@/lib/supabase/client")).supabase
-          .from("employees")
-          .select("id")
-          .eq("department", session.department);
-        (deptEmployees ?? []).forEach((e: { id: string }) => employeeIds.add(e.id));
-        requests = requests.filter((r) => employeeIds.has(r.employee_id));
-      }
+      const requests = await getLeaveRequests(filters);
 
       return NextResponse.json({ success: true, data: requests });
     } catch {

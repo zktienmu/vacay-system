@@ -108,6 +108,15 @@ export async function updateEmployee(
   return data as Employee;
 }
 
+export async function deleteEmployee(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("employees")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
 // === Leave Policies ===
 
 export async function getLeavePolicies(
