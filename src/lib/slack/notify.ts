@@ -5,6 +5,7 @@ import {
   buildNewRequestBlocks,
   buildApprovedBlocks,
   buildRejectedBlocks,
+  buildCancelledBlocks,
 } from "./format";
 
 // Initialize WebClient only if SLACK_BOT_TOKEN is set (graceful degradation)
@@ -37,7 +38,7 @@ export async function notifyNewRequest(
       try {
         await slack.chat.postMessage({
           channel: admin.slack_user_id!,
-          text: `🆕 New leave request from ${employee.name}`,
+          text: `🆕 ${employee.name} 提出了新的假期申請`,
           blocks,
         });
       } catch (error) {
@@ -45,11 +46,7 @@ export async function notifyNewRequest(
       }
     });
 
-  try {
-    await Promise.allSettled(dmPromises);
-  } catch (error) {
-    console.error("[Slack] Unexpected error in notifyNewRequest", error);
-  }
+  await Promise.allSettled(dmPromises);
 }
 
 /**
@@ -59,14 +56,15 @@ export async function notifyNewRequest(
 export async function notifyApproved(
   request: LeaveRequest,
   employee: Employee,
+  delegateNames?: string[],
 ): Promise<void> {
   if (!slack) {
     console.debug("[Slack] SLACK_BOT_TOKEN not configured, skipping notifyApproved");
     return;
   }
 
-  const blocks = buildApprovedBlocks(request, employee);
-  const fallbackText = `✅ Leave approved for ${employee.name}`;
+  const blocks = buildApprovedBlocks(request, employee, delegateNames);
+  const fallbackText = `✅ ${employee.name} 的假期已核准`;
 
   // DM the employee
   if (employee.slack_user_id) {
@@ -108,7 +106,7 @@ export async function notifyDelegate(
 
   const dateRange = `${request.start_date} ~ ${request.end_date}`;
   const handoverText = request.handover_url
-    ? `\n交接內容：${request.handover_url}`
+    ? `\n📋 交接事項：<${request.handover_url}|查看交接文件>`
     : "";
 
   try {
@@ -120,7 +118,7 @@ export async function notifyDelegate(
           type: "section",
           text: {
             type: "mrkdwn",
-            text: `📋 *你是 ${employee.name} 的代理人*\n日期：${dateRange}${handoverText}`,
+            text: `📋 *你是 ${employee.name} 的代理人*\n📅 日期：${dateRange}（${request.days} 天）${handoverText}`,
           },
         },
       ],
@@ -147,15 +145,45 @@ export async function notifyRejected(
     return;
   }
 
-  const blocks = buildRejectedBlocks(request);
+  const blocks = buildRejectedBlocks(request, employee);
 
   try {
     await slack.chat.postMessage({
       channel: employee.slack_user_id,
-      text: "❌ Your leave request has been rejected",
+      text: `❌ 你的假期申請已被駁回`,
       blocks,
     });
   } catch (error) {
     console.error("[Slack] Failed to DM employee about rejection", error);
+  }
+}
+
+/**
+ * Post cancellation notice to the leave channel.
+ * Fire-and-forget: errors are logged, never thrown.
+ */
+export async function notifyCancelled(
+  request: LeaveRequest,
+  employee: Employee,
+): Promise<void> {
+  if (!slack) {
+    console.debug("[Slack] SLACK_BOT_TOKEN not configured, skipping notifyCancelled");
+    return;
+  }
+
+  const blocks = buildCancelledBlocks(request, employee);
+  const fallbackText = `🚫 ${employee.name} 取消了假期`;
+
+  // Post to the leave channel
+  if (channelId) {
+    try {
+      await slack.chat.postMessage({
+        channel: channelId,
+        text: fallbackText,
+        blocks,
+      });
+    } catch (error) {
+      console.error("[Slack] Failed to post cancellation to leave channel", error);
+    }
   }
 }

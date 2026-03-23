@@ -4,17 +4,16 @@ import type { LeaveType, LeaveRequest, Employee } from "@/types";
 import type { KnownBlock, Block } from "@slack/web-api";
 
 const leaveTypeLabels: Record<LeaveType, string> = {
-  annual: "Annual Leave",
-  personal: "Personal Leave",
-  sick: "Sick Leave",
-  official: "Official Leave",
-  unpaid: "Unpaid Leave",
-  remote: "Remote Work",
+  annual: "特休",
+  personal: "事假",
+  sick: "病假",
+  official: "公假",
+  unpaid: "無薪假",
+  remote: "遠端工作",
 };
 
 /**
  * Escape Slack mrkdwn special characters in user-supplied content.
- * Prevents injection of formatting, links, or mentions via notes/text fields.
  */
 export function escapeSlackMrkdwn(text: string): string {
   return text
@@ -27,25 +26,18 @@ export function escapeSlackMrkdwn(text: string): string {
     .replace(/`/g, "\\`");
 }
 
-/**
- * Format a leave type into a human-readable label.
- */
 export function formatLeaveType(type: LeaveType): string {
   return leaveTypeLabels[type] ?? type;
 }
 
-/**
- * Format an ISO date string into a readable date (e.g., "Mar 13, 2026").
- */
 export function formatDate(isoDate: string): string {
-  return format(parseISO(isoDate), "MMM d, yyyy");
+  return format(parseISO(isoDate), "yyyy/MM/dd");
 }
 
-/**
- * Format a date range string like "Mar 13, 2026 → Mar 15, 2026".
- */
 export function formatDateRange(startDate: string, endDate: string): string {
-  return `${formatDate(startDate)} → ${formatDate(endDate)}`;
+  return startDate === endDate
+    ? formatDate(startDate)
+    : `${formatDate(startDate)} ~ ${formatDate(endDate)}`;
 }
 
 /**
@@ -58,48 +50,39 @@ export function buildNewRequestBlocks(
 ): (KnownBlock | Block)[] {
   const typeLabel = formatLeaveType(request.leave_type);
   const dateRange = formatDateRange(request.start_date, request.end_date);
-  const notes = request.notes ? escapeSlackMrkdwn(request.notes) : "No notes";
   const reviewUrl = `${appUrl}/admin/review/${request.id}`;
+
+  const fields: { type: "mrkdwn"; text: string }[] = [
+    { type: "mrkdwn", text: `📅 *日期：*${dateRange}（${request.days} 天）` },
+  ];
+
+  if (request.notes) {
+    fields.push({ type: "mrkdwn", text: `📝 *備註：*${escapeSlackMrkdwn(request.notes)}` });
+  }
+
+  if (request.handover_url) {
+    fields.push({ type: "mrkdwn", text: `📋 *交接事項：*<${request.handover_url}|查看交接文件>` });
+  }
 
   return [
     {
       type: "header",
-      text: {
-        type: "plain_text",
-        text: "🆕 New Leave Request",
-        emoji: true,
-      },
+      text: { type: "plain_text", text: "🆕 新假期申請", emoji: true },
     },
     {
       type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `*${employee.name}* requests *${typeLabel}*`,
-      },
+      text: { type: "mrkdwn", text: `*${employee.name}* 申請 *${typeLabel}*` },
     },
     {
       type: "section",
-      fields: [
-        {
-          type: "mrkdwn",
-          text: `📅 ${dateRange} (*${request.days}* day${request.days !== 1 ? "s" : ""})`,
-        },
-        {
-          type: "mrkdwn",
-          text: `📝 ${notes}`,
-        },
-      ],
+      fields,
     },
     {
       type: "actions",
       elements: [
         {
           type: "button",
-          text: {
-            type: "plain_text",
-            text: "Review Request",
-            emoji: true,
-          },
+          text: { type: "plain_text", text: "審核申請", emoji: true },
           url: reviewUrl,
           style: "primary",
           action_id: "review_request",
@@ -115,32 +98,39 @@ export function buildNewRequestBlocks(
 export function buildApprovedBlocks(
   request: LeaveRequest,
   employee: Employee,
+  delegateNames?: string[],
 ): (KnownBlock | Block)[] {
   const typeLabel = formatLeaveType(request.leave_type);
   const dateRange = formatDateRange(request.start_date, request.end_date);
 
+  const details: string[] = [
+    `📅 日期：${dateRange}（${request.days} 天）`,
+  ];
+
+  if (delegateNames && delegateNames.length > 0) {
+    details.push(`👤 代理人：${delegateNames.join("、")}`);
+  }
+
+  if (request.handover_url) {
+    details.push(`📋 交接事項：<${request.handover_url}|查看交接文件>`);
+  }
+
+  if (request.notes) {
+    details.push(`📝 備註：${escapeSlackMrkdwn(request.notes)}`);
+  }
+
   return [
     {
       type: "header",
-      text: {
-        type: "plain_text",
-        text: "✅ Leave Approved",
-        emoji: true,
-      },
+      text: { type: "plain_text", text: "✅ 假期已核准", emoji: true },
     },
     {
       type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `*${employee.name}* - ${typeLabel}`,
-      },
+      text: { type: "mrkdwn", text: `*${employee.name}* — ${typeLabel}` },
     },
     {
       type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `📅 ${dateRange} (*${request.days}* day${request.days !== 1 ? "s" : ""})`,
-      },
+      text: { type: "mrkdwn", text: details.join("\n") },
     },
   ];
 }
@@ -150,6 +140,7 @@ export function buildApprovedBlocks(
  */
 export function buildRejectedBlocks(
   request: LeaveRequest,
+  employee: Employee,
 ): (KnownBlock | Block)[] {
   const typeLabel = formatLeaveType(request.leave_type);
   const dateRange = formatDateRange(request.start_date, request.end_date);
@@ -157,17 +148,38 @@ export function buildRejectedBlocks(
   return [
     {
       type: "header",
-      text: {
-        type: "plain_text",
-        text: "❌ Leave Rejected",
-        emoji: true,
-      },
+      text: { type: "plain_text", text: "❌ 假期已駁回", emoji: true },
     },
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `Your *${typeLabel}* request (${dateRange}) has been rejected.`,
+        text: `*${employee.name}* 的 *${typeLabel}* 申請（${dateRange}）已被駁回。`,
+      },
+    },
+  ];
+}
+
+/**
+ * Build Block Kit blocks for a cancelled leave notification.
+ */
+export function buildCancelledBlocks(
+  request: LeaveRequest,
+  employee: Employee,
+): (KnownBlock | Block)[] {
+  const typeLabel = formatLeaveType(request.leave_type);
+  const dateRange = formatDateRange(request.start_date, request.end_date);
+
+  return [
+    {
+      type: "header",
+      text: { type: "plain_text", text: "🚫 假期已取消", emoji: true },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*${employee.name}* 取消了 *${typeLabel}*（${dateRange}，${request.days} 天）`,
       },
     },
   ];

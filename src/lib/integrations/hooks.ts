@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "@/lib/supabase/client";
-import { notifyNewRequest, notifyApproved, notifyRejected, notifyDelegate } from "@/lib/slack/notify";
+import { notifyNewRequest, notifyApproved, notifyRejected, notifyCancelled, notifyDelegate } from "@/lib/slack/notify";
 import { createLeaveEvent, deleteLeaveEvent } from "@/lib/google/calendar";
 import type { LeaveRequest, Employee } from "@/types";
 
@@ -77,20 +77,25 @@ export async function onLeaveRequestApproved(
     return;
   }
 
-  // Send Slack notifications (fire-and-forget)
-  await notifyApproved(request, employee);
-
-  // Notify all delegates
+  // Resolve delegates
   const delegateIds = request.delegate_ids?.length
     ? request.delegate_ids
     : request.delegate_id
       ? [request.delegate_id]
       : [];
+  const delegates: Employee[] = [];
   for (const did of delegateIds) {
     const delegate = await fetchEmployee(did);
-    if (delegate) {
-      await notifyDelegate(request, employee, delegate);
-    }
+    if (delegate) delegates.push(delegate);
+  }
+
+  // Send Slack notifications with delegate names
+  const delegateNames = delegates.map((d) => d.name);
+  await notifyApproved(request, employee, delegateNames);
+
+  // Notify each delegate via DM
+  for (const delegate of delegates) {
+    await notifyDelegate(request, employee, delegate);
   }
 
   // Create Google Calendar event
@@ -145,6 +150,13 @@ export async function onLeaveRequestRejected(
 export async function onLeaveRequestCancelled(
   request: LeaveRequest,
 ): Promise<void> {
+  // Notify on Slack channel
+  const employee = await fetchEmployee(request.employee_id);
+  if (employee) {
+    await notifyCancelled(request, employee);
+  }
+
+  // Clean up calendar event
   if (request.calendar_event_id) {
     await deleteLeaveEvent(request.calendar_event_id);
   }
