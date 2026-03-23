@@ -31,14 +31,16 @@ export async function notifyNewRequest(
   }
 
   const blocks = buildNewRequestBlocks(request, employee, appUrl);
+  const fallbackText = `🆕 ${employee.name} 提出了新的假期申請`;
 
+  // DM all approvers
   const dmPromises = admins
     .filter((admin) => admin.slack_user_id)
     .map(async (admin) => {
       try {
         await slack.chat.postMessage({
           channel: admin.slack_user_id!,
-          text: `🆕 ${employee.name} 提出了新的假期申請`,
+          text: fallbackText,
           blocks,
         });
       } catch (error) {
@@ -47,6 +49,19 @@ export async function notifyNewRequest(
     });
 
   await Promise.allSettled(dmPromises);
+
+  // Post to the leave channel
+  if (channelId) {
+    try {
+      await slack.chat.postMessage({
+        channel: channelId,
+        text: fallbackText,
+        blocks,
+      });
+    } catch (error) {
+      console.error("[Slack] Failed to post new request to leave channel", error);
+    }
+  }
 }
 
 /**
