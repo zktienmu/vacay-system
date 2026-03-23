@@ -57,7 +57,9 @@ export async function createLeaveEvent(
   }
 
   const days = request.days;
-  const summary = `${employeeName} ${days > 1 ? `${days} Days` : "Day"}-Off`;
+  const summary = request.leave_type === "remote"
+    ? `${employeeName} Remote${request.notes ? ` — ${request.notes}` : ""}`
+    : `${employeeName} ${days > 1 ? `${days} Days` : "Day"}-Off`;
 
   // Google Calendar all-day events: end date is exclusive,
   // so we add 1 day to include the last day of leave.
