@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { zhTW as zhTWLocale } from "date-fns/locale/zh-TW";
 import { useSession } from "@/hooks/useSession";
+import { useEmployees } from "@/hooks/useEmployees";
 import LeaveStatusBadge from "@/components/LeaveStatusBadge";
 import LeaveTypeIcon from "@/components/LeaveTypeIcon";
 import { useTranslation } from "@/lib/i18n/context";
@@ -20,8 +21,14 @@ export default function ReviewDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { session } = useSession();
+  const { employees } = useEmployees();
   const { t, locale } = useTranslation();
   const id = params.id as string;
+
+  const employeeMap = useMemo(
+    () => new Map(employees.map((e) => [e.id, e.name])),
+    [employees]
+  );
 
   const dateFnsLocale = locale === "zh-TW" ? zhTWLocale : undefined;
 
@@ -210,11 +217,13 @@ export default function ReviewDetailPage() {
             </div>
           </div>
 
-          {/* Delegate */}
+          {/* Delegates */}
           <div className="grid grid-cols-3 gap-4 border-b border-gray-100 pb-4 dark:border-gray-700">
             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("review.delegate")}</div>
             <div className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-              {request.delegate?.name || t("review.noneAssigned")}
+              {(request.delegate_ids?.length
+                ? request.delegate_ids.map((id) => employeeMap.get(id)).filter(Boolean).join(", ")
+                : null) || t("review.noneAssigned")}
             </div>
           </div>
 

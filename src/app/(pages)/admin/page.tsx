@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { zhTW as zhTWLocale } from "date-fns/locale/zh-TW";
 import { useSession } from "@/hooks/useSession";
 import { useLeaveRequests } from "@/hooks/useLeaveRequests";
+import { useEmployees } from "@/hooks/useEmployees";
 import LeaveStatusBadge from "@/components/LeaveStatusBadge";
 import LeaveTypeIcon from "@/components/LeaveTypeIcon";
 import { useTranslation } from "@/lib/i18n/context";
@@ -14,7 +15,13 @@ import type { ApiResponse } from "@/types";
 export default function AdminReviewPage() {
   const { session } = useSession();
   const { requests, isLoading, refetch } = useLeaveRequests(true);
+  const { employees } = useEmployees();
   const { t, locale } = useTranslation();
+
+  const employeeMap = useMemo(
+    () => new Map(employees.map((e) => [e.id, e.name])),
+    [employees]
+  );
 
   const dateFnsLocale = locale === "zh-TW" ? zhTWLocale : undefined;
 
@@ -141,7 +148,7 @@ export default function AdminReviewPage() {
                     <div className="flex items-center gap-4">
                       <div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          {req.employee?.name || t("common.unknown")}
+                          {employeeMap.get(req.employee_id) || req.employee?.name || t("common.unknown")}
                         </p>
                         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                           {formatDate(req.start_date, "MMM d")} -{" "}
@@ -196,13 +203,15 @@ export default function AdminReviewPage() {
                           </span>
                         </div>
 
-                        {/* Delegate */}
+                        {/* Delegates */}
                         <div className="grid grid-cols-3 gap-2">
                           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                             {t("review.delegate")}
                           </span>
                           <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {req.delegate?.name || t("review.noneAssigned")}
+                            {(req.delegate_ids?.length
+                              ? req.delegate_ids.map((id) => employeeMap.get(id)).filter(Boolean).join(", ")
+                              : null) || t("review.noneAssigned")}
                           </span>
                         </div>
 
@@ -300,7 +309,7 @@ export default function AdminReviewPage() {
                   {recentReviewed.map((req) => (
                     <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {req.employee?.name || t("common.unknown")}
+                        {employeeMap.get(req.employee_id) || req.employee?.name || t("common.unknown")}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
                         <LeaveTypeIcon type={req.leave_type} showLabel />
@@ -322,7 +331,7 @@ export default function AdminReviewPage() {
                 <div key={req.id} className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {req.employee?.name || t("common.unknown")}
+                      {employeeMap.get(req.employee_id) || req.employee?.name || t("common.unknown")}
                     </span>
                     <LeaveStatusBadge status={req.status} />
                   </div>

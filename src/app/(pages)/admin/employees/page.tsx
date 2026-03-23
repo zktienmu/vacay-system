@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, Fragment } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { zhTW as zhTWLocale } from "date-fns/locale/zh-TW";
@@ -91,6 +91,7 @@ export default function EmployeesPage() {
   const [policyForm, setPolicyForm] = useState<PolicyFormData>({});
   const [policiesLoading, setPoliciesLoading] = useState(false);
   const [policySaving, setPolicySaving] = useState(false);
+  const [policySaveResult, setPolicySaveResult] = useState<{ success: boolean; message: string } | null>(null);
 
   if (session?.role !== "admin") {
     return (
@@ -233,6 +234,7 @@ export default function EmployeesPage() {
 
     setExpandedId(employeeId);
     setPoliciesLoading(true);
+    setPolicySaveResult(null);
 
     try {
       const res = await fetch(`/api/employees/${employeeId}/policies`);
@@ -245,14 +247,15 @@ export default function EmployeesPage() {
       const form: PolicyFormData = {};
       for (const type of LEAVE_TYPES) {
         const policy = json.data.find((p) => p.leave_type === type);
-        form[type] = policy?.total_days ?? 0;
+        // Default: annual → 0, others → -1 (unlimited)
+        form[type] = policy?.total_days ?? (type === "annual" ? 0 : -1);
       }
       setPolicyForm(form);
     } catch (err) {
       console.error("Failed to fetch policies:", err);
       const form: PolicyFormData = {};
       for (const type of LEAVE_TYPES) {
-        form[type] = 0;
+        form[type] = type === "annual" ? 0 : -1;
       }
       setPolicyForm(form);
       setPolicies([]);
@@ -263,6 +266,7 @@ export default function EmployeesPage() {
 
   async function savePolicies(employeeId: string) {
     setPolicySaving(true);
+    setPolicySaveResult(null);
     try {
       const policiesPayload = LEAVE_TYPES.map((type) => ({
         leave_type: type,
@@ -278,9 +282,12 @@ export default function EmployeesPage() {
       if (!json.success) {
         throw new Error(json.error || "Failed to save policies");
       }
-      alert(t("employees.policiesSaved"));
+      setPolicySaveResult({ success: true, message: t("employees.policiesSaved") });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to save policies");
+      setPolicySaveResult({
+        success: false,
+        message: err instanceof Error ? err.message : "Failed to save policies",
+      });
     } finally {
       setPolicySaving(false);
     }
@@ -593,6 +600,15 @@ export default function EmployeesPage() {
                           );
                         })}
                       </div>
+                      {policySaveResult && (
+                        <div className={`mt-4 rounded-lg p-3 text-sm ${
+                          policySaveResult.success
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+                            : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"
+                        }`}>
+                          {policySaveResult.message}
+                        </div>
+                      )}
                       <div className="mt-4 flex justify-end">
                         <button
                           onClick={() => savePolicies(emp.id)}

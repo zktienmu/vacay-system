@@ -110,9 +110,11 @@ export const PUT = withAdmin(
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
       return NextResponse.json({ success: true, data: results });
-    } catch {
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to upsert policy";
       return NextResponse.json(
-        { success: false, error: "Failed to upsert policy" },
+        { success: false, error: message },
         { status: 500 },
       );
     }

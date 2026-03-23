@@ -54,7 +54,7 @@ export default function NewLeavePage() {
   const [leaveType, setLeaveType] = useState<LeaveType>("annual");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [delegateId, setDelegateId] = useState("");
+  const [delegateIds, setDelegateIds] = useState<string[]>([]);
   const [handoverUrl, setHandoverUrl] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -104,12 +104,19 @@ export default function NewLeavePage() {
           : "Handover document URL is required for leaves of 3+ working days"
       );
     }
+    if (delegateIds.length === 0) {
+      errors.push(
+        locale === "zh-TW"
+          ? "請選擇至少一位代理人"
+          : "At least one delegate is required"
+      );
+    }
     return errors;
-  }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale, handoverRequired, handoverUrl]);
+  }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale, handoverRequired, handoverUrl, delegateIds]);
 
   const canSubmit =
     startDate && endDate && workingDays > 0 && validationErrors.length === 0 && !submitting &&
-    (!handoverRequired || handoverUrl.trim() !== "");
+    (!handoverRequired || handoverUrl.trim() !== "") && delegateIds.length > 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -126,7 +133,7 @@ export default function NewLeavePage() {
           leave_type: leaveType,
           start_date: startDate,
           end_date: endDate,
-          delegate_id: delegateId || null,
+          delegate_ids: delegateIds,
           handover_url: handoverUrl.trim() || null,
           notes: notes.trim() || null,
         }),
@@ -254,24 +261,57 @@ export default function NewLeavePage() {
           )}
         </div>
 
-        {/* Delegate */}
+        {/* Delegates */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {t("leave.delegate")}
+            {t("leave.delegate")} <span className="text-red-500">*</span>
           </label>
-          <select
-            value={delegateId}
-            onChange={(e) => setDelegateId(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            disabled={slackUsersLoading}
-          >
-            <option value="">{t("common.noDelegate")}</option>
-            {delegateCandidates.map((u) => (
-              <option key={u.employee_id} value={u.employee_id!}>
-                {u.display_name || u.name}
-              </option>
-            ))}
-          </select>
+          <div className={`rounded-lg border px-3 py-2.5 ${
+            delegateIds.length === 0
+              ? "border-gray-300 dark:border-gray-600"
+              : "border-blue-400 dark:border-blue-500"
+          }`}>
+            {slackUsersLoading ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                {t("common.loading")}
+              </p>
+            ) : delegateCandidates.length === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                {locale === "zh-TW" ? "沒有可選的代理人" : "No delegates available"}
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {delegateCandidates.map((u) => {
+                  const eid = u.employee_id!;
+                  const checked = delegateIds.includes(eid);
+                  return (
+                    <label
+                      key={eid}
+                      className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
+                        checked
+                          ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                          : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() =>
+                          setDelegateIds((prev) =>
+                            checked
+                              ? prev.filter((id) => id !== eid)
+                              : [...prev, eid]
+                          )
+                        }
+                        className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700"
+                      />
+                      {u.display_name || u.name}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {t("leave.delegateHint")}
           </p>

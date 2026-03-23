@@ -175,7 +175,10 @@ export async function getLeaveRequests(filters: {
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []) as LeaveRequest[];
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    delegate_ids: [],
+    ...r,
+  })) as unknown as LeaveRequest[];
 }
 
 export async function getLeaveRequestById(
@@ -192,23 +195,31 @@ export async function getLeaveRequestById(
     throw error;
   }
 
-  return data as LeaveRequest;
+  return { delegate_ids: [], ...data } as LeaveRequest;
 }
 
 export async function createLeaveRequest(
   requestData: Omit<
     LeaveRequest,
     "id" | "reviewed_by" | "reviewed_at" | "calendar_event_id" | "created_at" | "updated_at"
-  >,
+  > & { reviewed_by?: string | null; reviewed_at?: string | null },
 ): Promise<LeaveRequest> {
+  // Only include delegate_ids in the insert when non-empty,
+  // so the DB default ('{}') is used otherwise and the insert
+  // still works before the migration adds the column.
+  const { delegate_ids, ...rest } = requestData;
+  const insertPayload = delegate_ids?.length
+    ? { ...rest, delegate_ids }
+    : rest;
+
   const { data, error } = await supabase
     .from("leave_requests")
-    .insert(requestData)
+    .insert(insertPayload)
     .select("*")
     .single();
 
   if (error) throw error;
-  return data as LeaveRequest;
+  return { delegate_ids: [], ...data } as LeaveRequest;
 }
 
 export async function updateLeaveRequest(
@@ -307,16 +318,36 @@ export async function deletePublicHoliday(id: string): Promise<void> {
 export async function getDelegatedLeaves(
   delegateId: string,
 ): Promise<LeaveRequest[]> {
+  // Try delegate_ids array first, fall back to legacy delegate_id column
   const { data, error } = await supabase
     .from("leave_requests")
     .select("*")
-    .eq("delegate_id", delegateId)
+    .contains("delegate_ids", [delegateId])
     .eq("status", "approved")
     .gte("end_date", new Date().toISOString().split("T")[0])
     .order("start_date", { ascending: true });
 
-  if (error) throw error;
-  return (data ?? []) as LeaveRequest[];
+  if (error) {
+    // Fallback: delegate_ids column may not exist yet
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from("leave_requests")
+      .select("*")
+      .eq("delegate_id", delegateId)
+      .eq("status", "approved")
+      .gte("end_date", new Date().toISOString().split("T")[0])
+      .order("start_date", { ascending: true });
+
+    if (fallbackError) throw fallbackError;
+    return (fallbackData ?? []).map((r: Record<string, unknown>) => ({
+      delegate_ids: [],
+      ...r,
+    })) as unknown as LeaveRequest[];
+  }
+
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    delegate_ids: [],
+    ...r,
+  })) as unknown as LeaveRequest[];
 }
 
 // === Audit Log ===

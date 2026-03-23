@@ -33,7 +33,12 @@ export const GET = withAuth(
 
       // Admins and managers can view all requests
       if (showAll && (session.role === "admin" || session.is_manager)) {
-        // Admin or any manager sees all
+        // Allow admin to filter by specific employee
+        const employeeIdParam = searchParams.get("employee_id");
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (session.role === "admin" && employeeIdParam && uuidRegex.test(employeeIdParam)) {
+          filters.employee_id = employeeIdParam;
+        }
       } else {
         filters.employee_id = session.employee_id;
       }
@@ -79,17 +84,30 @@ export const POST = withAuth(
         );
       }
 
-      const { leave_type, start_date, end_date, delegate_id, handover_url, notes } =
+      const { leave_type, start_date, end_date, delegate_id, delegate_ids, handover_url, notes, for_employee_id } =
         parsed.data;
 
-      // Validate that start date is not in the past
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (new Date(start_date) < today) {
+      // Admin backfill: create leave on behalf of an employee
+      const isAdminBackfill = !!for_employee_id;
+      if (isAdminBackfill && session.role !== "admin") {
         return NextResponse.json(
-          { success: false, error: "Start date cannot be in the past" },
-          { status: 400 },
+          { success: false, error: "Only admins can create leave on behalf of employees" },
+          { status: 403 },
         );
+      }
+
+      const targetEmployeeId = isAdminBackfill ? for_employee_id : session.employee_id;
+
+      // Validate that start date is not in the past (skip for admin backfill)
+      if (!isAdminBackfill) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (new Date(start_date) < today) {
+          return NextResponse.json(
+            { success: false, error: "Start date cannot be in the past" },
+            { status: 400 },
+          );
+        }
       }
 
       const days = await calculateWorkingDaysExcludingHolidays(start_date, end_date);
@@ -104,8 +122,8 @@ export const POST = withAuth(
         );
       }
 
-      // Require handover URL for leaves >= 3 working days
-      if (days >= 3 && (!handover_url || handover_url.trim() === "")) {
+      // Require handover URL for leaves >= 3 working days (skip for admin backfill)
+      if (!isAdminBackfill && days >= 3 && (!handover_url || handover_url.trim() === "")) {
         return NextResponse.json(
           {
             success: false,
@@ -115,9 +133,9 @@ export const POST = withAuth(
         );
       }
 
-      // Check balance (skip for unpaid/official leave)
-      if (leave_type !== "unpaid" && leave_type !== "official") {
-        const employee = await getEmployeeById(session.employee_id);
+      // Check balance (skip for unpaid/official leave and admin backfill)
+      if (!isAdminBackfill && leave_type !== "unpaid" && leave_type !== "official") {
+        const employee = await getEmployeeById(targetEmployeeId);
         if (!employee) {
           return NextResponse.json(
             { success: false, error: "Employee not found" },
@@ -126,7 +144,7 @@ export const POST = withAuth(
         }
 
         const balance = await getLeaveBalance(
-          session.employee_id,
+          targetEmployeeId,
           leave_type,
           employee.start_date,
         );
@@ -142,46 +160,72 @@ export const POST = withAuth(
         }
       }
 
-      // Validate delegate exists if provided
-      if (delegate_id) {
-        if (delegate_id === session.employee_id) {
+      // Use delegate_ids if provided, fall back to legacy delegate_id
+      const resolvedDelegateIds =
+        delegate_ids.length > 0
+          ? delegate_ids
+          : delegate_id
+            ? [delegate_id]
+            : [];
+
+      // Non-backfill requests require at least one delegate
+      if (!isAdminBackfill && resolvedDelegateIds.length === 0) {
+        return NextResponse.json(
+          { success: false, error: "At least one delegate is required" },
+          { status: 400 },
+        );
+      }
+
+      // Validate each delegate exists and is not the requester
+      for (const did of resolvedDelegateIds) {
+        if (did === targetEmployeeId) {
           return NextResponse.json(
             { success: false, error: "Cannot delegate to yourself" },
             { status: 400 },
           );
         }
-        const delegate = await getEmployeeById(delegate_id);
+        const delegate = await getEmployeeById(did);
         if (!delegate) {
           return NextResponse.json(
-            { success: false, error: "Delegate not found" },
+            { success: false, error: `Delegate not found: ${did}` },
             { status: 400 },
           );
         }
       }
 
       const leaveRequest = await createLeaveRequest({
-        employee_id: session.employee_id,
+        employee_id: targetEmployeeId,
         leave_type,
         start_date,
         end_date,
         days,
-        delegate_id: delegate_id ?? null,
+        delegate_id: resolvedDelegateIds[0] ?? null,
+        delegate_ids: resolvedDelegateIds,
         handover_url: handover_url ?? null,
         notes: notes ?? null,
-        status: "pending",
+        status: isAdminBackfill ? "approved" : "pending",
+        ...(isAdminBackfill && {
+          reviewed_by: session.employee_id,
+          reviewed_at: new Date().toISOString(),
+        }),
       });
 
       await insertAuditLog({
         actor_id: session.employee_id,
-        action: "leave.create",
+        action: isAdminBackfill ? "leave.backfill" : "leave.create",
         resource_type: "leave_request",
         resource_id: leaveRequest.id,
-        details: { leave_type, start_date, end_date, days },
+        details: {
+          leave_type, start_date, end_date, days,
+          ...(isAdminBackfill && { created_for: targetEmployeeId }),
+        },
         ip_address: getClientIp(req),
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
-      // Fire-and-forget: notify admins via Slack
-      onLeaveRequestCreated(leaveRequest).catch(() => {});
+      // Fire-and-forget: notify admins via Slack (skip for backfill)
+      if (!isAdminBackfill) {
+        onLeaveRequestCreated(leaveRequest).catch(() => {});
+      }
 
       return NextResponse.json(
         { success: true, data: leaveRequest },

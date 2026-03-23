@@ -80,9 +80,14 @@ export async function onLeaveRequestApproved(
   // Send Slack notifications (fire-and-forget)
   await notifyApproved(request, employee);
 
-  // Notify delegate if one is assigned
-  if (request.delegate_id) {
-    const delegate = await fetchEmployee(request.delegate_id);
+  // Notify all delegates
+  const delegateIds = request.delegate_ids?.length
+    ? request.delegate_ids
+    : request.delegate_id
+      ? [request.delegate_id]
+      : [];
+  for (const did of delegateIds) {
+    const delegate = await fetchEmployee(did);
     if (delegate) {
       await notifyDelegate(request, employee, delegate);
     }

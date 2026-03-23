@@ -80,10 +80,9 @@ export default function LoginPage() {
       router.replace("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Authentication failed";
-      // Don't show error for user rejections
+      // Don't show error for user rejections — keep hasTriedSiwe true to prevent re-trigger loop
       if (msg.toLowerCase().includes("user rejected") || msg.toLowerCase().includes("user denied")) {
         setStep("idle");
-        setHasTriedSiwe(false);
       } else {
         setError(msg);
         setStep("idle");

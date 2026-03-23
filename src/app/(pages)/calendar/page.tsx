@@ -5,7 +5,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { useTranslation } from "@/lib/i18n/context";
 import { getLeaveTypeEmoji } from "@/components/LeaveTypeIcon";
-import type { ApiResponse, LeaveRequestWithEmployee, LeaveType, PublicHoliday } from "@/types";
+import type { ApiResponse, LeaveType, PublicHoliday } from "@/types";
 
 const leaveTypeColors: Record<LeaveType, string> = {
   annual: "#3B82F6",    // blue
@@ -21,13 +21,8 @@ interface CalendarEvent {
   title: string;
   start: string;
   end: string;
-  backgroundColor: string;
-  borderColor: string;
-  textColor: string;
-  extendedProps: {
-    leaveType: LeaveType;
-    employeeName: string;
-  };
+  color: string;
+  allDay?: boolean;
 }
 
 export default function CalendarPage() {
@@ -43,59 +38,31 @@ export default function CalendarPage() {
           fetch("/api/calendar"),
           fetch("/api/holidays"),
         ]);
-        const leaveJson: ApiResponse<LeaveRequestWithEmployee[]> = await leaveRes.json();
+        const leaveJson: ApiResponse<CalendarEvent[]> = await leaveRes.json();
         const holidayJson: ApiResponse<PublicHoliday[]> = await holidayRes.json();
 
         if (!leaveJson.success || !leaveJson.data) {
           throw new Error(leaveJson.error || "Failed to fetch calendar data");
         }
 
-        const calEvents: CalendarEvent[] = leaveJson.data.map((leave) => {
-          const emoji = getLeaveTypeEmoji(leave.leave_type);
-          const typeName = t(`leave.types.${leave.leave_type}` as `leave.types.${LeaveType}`);
-          const name = leave.employee?.name || t("common.unknown");
-          const color = leaveTypeColors[leave.leave_type];
-
-          // FullCalendar end date is exclusive, so add one day
-          const endDate = new Date(leave.end_date);
-          endDate.setDate(endDate.getDate() + 1);
-
-          return {
-            id: leave.id,
-            title: `${emoji} ${name} - ${typeName}`,
-            start: leave.start_date,
-            end: endDate.toISOString().split("T")[0],
-            backgroundColor: color,
-            borderColor: color,
-            textColor: "#ffffff",
-            extendedProps: {
-              leaveType: leave.leave_type,
-              employeeName: name,
-            },
-          };
-        });
+        // API already returns pre-formatted calendar events
+        const calEvents: CalendarEvent[] = [...leaveJson.data];
 
         // Add public holidays as calendar events
         if (holidayJson.success && holidayJson.data) {
-          const holidayEvents: CalendarEvent[] = holidayJson.data.map((holiday) => {
+          for (const holiday of holidayJson.data) {
             const endDate = new Date(holiday.date);
             endDate.setDate(endDate.getDate() + 1);
 
-            return {
+            calEvents.push({
               id: `holiday-${holiday.id}`,
               title: `\uD83C\uDDF9\uD83C\uDDFC ${holiday.name}`,
               start: holiday.date,
               end: endDate.toISOString().split("T")[0],
-              backgroundColor: "#F59E0B",
-              borderColor: "#F59E0B",
-              textColor: "#ffffff",
-              extendedProps: {
-                leaveType: "official" as LeaveType,
-                employeeName: holiday.name,
-              },
-            };
-          });
-          calEvents.push(...holidayEvents);
+              color: "#F59E0B",
+              allDay: true,
+            });
+          }
         }
 
         setEvents(calEvents);
@@ -107,7 +74,7 @@ export default function CalendarPage() {
     }
 
     fetchCalendarData();
-  }, [t]);
+  }, []);
 
   return (
     <div className="space-y-6">

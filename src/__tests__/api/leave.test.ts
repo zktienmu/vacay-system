@@ -240,6 +240,7 @@ describe('POST /api/leave', () => {
         leave_type: 'annual',
         start_date: '2026-04-06',
         end_date: '2026-04-08',
+        delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
         handover_url: 'https://docs.google.com/handover',
       }),
     })
@@ -278,6 +279,7 @@ describe('POST /api/leave', () => {
         leave_type: 'unpaid',
         start_date: '2026-04-06',
         end_date: '2026-04-10',
+        delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
         handover_url: 'https://docs.google.com/handover',
       }),
     })
@@ -298,6 +300,7 @@ describe('POST /api/leave', () => {
         leave_type: 'official',
         start_date: '2026-04-06',
         end_date: '2026-04-10',
+        delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
         handover_url: 'https://docs.google.com/handover',
       }),
     })
@@ -315,6 +318,7 @@ describe('POST /api/leave', () => {
         leave_type: 'annual',
         start_date: '2026-04-06',
         end_date: '2026-04-10', // 5 working days but only 1 remaining
+        delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
         handover_url: 'https://docs.google.com/handover',
       }),
     })

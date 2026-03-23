@@ -55,7 +55,7 @@ export const PATCH = withAuth(
           );
         }
 
-        if (leaveRequest.employee_id !== session.employee_id) {
+        if (leaveRequest.employee_id !== session.employee_id && session.role !== "admin") {
           return NextResponse.json(
             { success: false, error: "Forbidden" },
             { status: 403 },

@@ -54,6 +54,7 @@ export const POST = withAdmin(
         role: parsed.data.role,
         department: parsed.data.department,
         is_manager: parsed.data.is_manager,
+        transition_annual_days: null,
       });
 
       await insertAuditLog({

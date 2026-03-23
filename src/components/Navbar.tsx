@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Disclosure, DisclosureButton, DisclosurePanel, Transition } from "@headlessui/react";
+import { useDisconnect } from "wagmi";
 import { useSession } from "@/hooks/useSession";
 import { useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "@/lib/i18n/context";
@@ -45,8 +46,14 @@ function MoonIcon() {
 export default function Navbar() {
   const pathname = usePathname();
   const { session, logout } = useSession();
+  const { disconnectAsync } = useDisconnect();
   const { theme, toggleTheme, mounted } = useTheme();
   const { t, locale, setLocale } = useTranslation();
+
+  const handleLogout = async () => {
+    await disconnectAsync().catch(() => {});
+    await logout();
+  };
   const isAdmin = session?.role === "admin";
   const isManager = session?.is_manager === true;
 
@@ -66,6 +73,7 @@ export default function Navbar() {
     { href: "/admin/employees", label: t("nav.employees") },
     { href: "/admin/holidays", label: locale === "zh-TW" ? "假日" : "Holidays" },
     { href: "/admin/reports", label: locale === "zh-TW" ? "報表" : "Reports" },
+    { href: "/admin/transition", label: locale === "zh-TW" ? "資料轉移" : "Transition" },
   ];
 
   const allLinks = isAdmin
@@ -154,7 +162,7 @@ export default function Navbar() {
                       </span>
                     </div>
                     <button
-                      onClick={logout}
+                      onClick={handleLogout}
                       className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
                     >
                       {t("nav.logout")}
@@ -236,7 +244,7 @@ export default function Navbar() {
                     </div>
                     <DisclosureButton
                       as="button"
-                      onClick={logout}
+                      onClick={handleLogout}
                       className="block w-full rounded-lg px-3 py-2 text-left text-base font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                     >
                       {t("nav.logout")}

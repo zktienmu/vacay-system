@@ -36,8 +36,10 @@ export const createLeaveRequestSchema = z
     start_date: isoDate,
     end_date: isoDate,
     delegate_id: z.string().uuid().nullable().optional(),
+    delegate_ids: z.array(z.string().uuid()).optional().default([]),
     handover_url: z.string().url().nullable().optional(),
     notes: z.string().max(1000).nullable().optional(),
+    for_employee_id: z.string().uuid().optional(),
   })
   .refine(
     (data) => new Date(data.end_date) >= new Date(data.start_date),
@@ -74,6 +76,7 @@ export const updateEmployeeSchema = z.object({
   role: z.enum(roles).optional(),
   department: z.enum(departments).optional(),
   is_manager: z.boolean().optional(),
+  transition_annual_days: z.number().int().min(0).max(365).nullable().optional(),
 });
 
 // === Public Holidays ===

@@ -20,6 +20,7 @@ export interface Employee {
   role: "admin" | "employee";
   department: "engineering" | "admin";
   is_manager: boolean;
+  transition_annual_days: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -52,6 +53,7 @@ export interface LeaveRequest {
   end_date: string; // ISO date
   days: number;
   delegate_id: string | null;
+  delegate_ids: string[];
   handover_url: string | null;
   notes: string | null;
   status: LeaveStatus;
@@ -94,6 +96,7 @@ export interface ApiResponse<T = unknown> {
 export interface LeaveRequestWithEmployee extends LeaveRequest {
   employee?: Employee;
   delegate?: Employee;
+  delegates?: Employee[];
   reviewer?: Employee;
 }
 

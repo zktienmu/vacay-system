@@ -56,9 +56,8 @@ export async function createLeaveEvent(
     return null;
   }
 
-  const emoji = leaveTypeEmojis[request.leave_type] ?? "";
-  const typeLabel = formatLeaveType(request.leave_type);
-  const summary = `${emoji} ${employeeName} - ${typeLabel}`;
+  const days = request.days;
+  const summary = `${employeeName} ${days > 1 ? `${days} Days` : "Day"}-Off`;
 
   // Google Calendar all-day events: end date is exclusive,
   // so we add 1 day to include the last day of leave.

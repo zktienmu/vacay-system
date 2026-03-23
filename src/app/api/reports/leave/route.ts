@@ -73,9 +73,11 @@ export const GET = withAdmin(
         endDate: r.end_date,
         days: r.days,
         status: r.status,
-        delegate: r.delegate_id
-          ? (employeeMap.get(r.delegate_id) ?? "-")
-          : "-",
+        delegate: r.delegate_ids?.length
+          ? r.delegate_ids.map((id) => employeeMap.get(id) ?? "Unknown").join(", ")
+          : r.delegate_id
+            ? (employeeMap.get(r.delegate_id) ?? "-")
+            : "-",
         notes: r.notes ?? "",
         requestedAt: r.created_at,
         reviewedBy: r.reviewed_by
