@@ -15,6 +15,7 @@ import { useSlackUsers } from "@/hooks/useSlackUsers";
 import { useSession } from "@/hooks/useSession";
 import { getLeaveTypeEmoji } from "@/components/LeaveTypeIcon";
 import { useTranslation } from "@/lib/i18n/context";
+import { useQuery } from "@tanstack/react-query";
 import type { LeaveType, ApiResponse } from "@/types";
 
 const LEAVE_TYPES: LeaveType[] = [
@@ -49,6 +50,15 @@ export default function NewLeavePage() {
   const { session } = useSession();
   const { balances, isLoading: balancesLoading } = useLeaveBalance();
   const { slackUsers, isLoading: slackUsersLoading } = useSlackUsers();
+  const { data: employeeList = [], isLoading: employeesLoading } = useQuery({
+    queryKey: ["employeeList"],
+    queryFn: async () => {
+      const res = await fetch("/api/employees/list");
+      const json: ApiResponse<{ id: string; name: string }[]> = await res.json();
+      if (!json.success || !json.data) return [];
+      return json.data;
+    },
+  });
   const { t, locale } = useTranslation();
 
   const [leaveType, setLeaveType] = useState<LeaveType>("annual");
@@ -72,8 +82,20 @@ export default function NewLeavePage() {
       ? currentBalance.remaining_days - workingDays
       : null;
 
-  // slackUsers already excludes current user (filtered server-side)
-  const delegateCandidates = slackUsers.filter((u) => u.employee_id);
+  // Use Slack users if available, otherwise fall back to employee list
+  const slackCandidates = slackUsers.filter((u) => u.employee_id);
+  const delegateCandidates = useMemo(() => {
+    if (slackCandidates.length > 0) {
+      return slackCandidates.map((u) => ({
+        id: u.employee_id!,
+        name: u.display_name || u.name,
+      }));
+    }
+    return employeeList
+      .filter((e) => e.id !== session?.employee_id)
+      .map((e) => ({ id: e.id, name: e.name }));
+  }, [slackCandidates, employeeList, session?.employee_id]);
+  const delegatesLoading = slackUsersLoading && employeesLoading;
 
   const leaveTypeLabel = (type: LeaveType) => t(`leave.types.${type}` as `leave.types.${LeaveType}`);
 
@@ -271,7 +293,7 @@ export default function NewLeavePage() {
               ? "border-gray-300 dark:border-gray-600"
               : "border-blue-400 dark:border-blue-500"
           }`}>
-            {slackUsersLoading ? (
+            {delegatesLoading ? (
               <p className="text-sm text-gray-400 dark:text-gray-500">
                 {t("common.loading")}
               </p>
@@ -281,12 +303,11 @@ export default function NewLeavePage() {
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                {delegateCandidates.map((u) => {
-                  const eid = u.employee_id!;
-                  const checked = delegateIds.includes(eid);
+                {delegateCandidates.map((c) => {
+                  const checked = delegateIds.includes(c.id);
                   return (
                     <label
-                      key={eid}
+                      key={c.id}
                       className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
                         checked
                           ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
@@ -299,13 +320,13 @@ export default function NewLeavePage() {
                         onChange={() =>
                           setDelegateIds((prev) =>
                             checked
-                              ? prev.filter((id) => id !== eid)
-                              : [...prev, eid]
+                              ? prev.filter((id) => id !== c.id)
+                              : [...prev, c.id]
                           )
                         }
                         className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700"
                       />
-                      {u.display_name || u.name}
+                      {c.name}
                     </label>
                   );
                 })}

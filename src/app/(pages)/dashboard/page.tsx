@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { zhTW as zhTWLocale } from "date-fns/locale/zh-TW";
@@ -20,8 +20,32 @@ interface DelegatedLeave extends LeaveRequest {
 export default function DashboardPage() {
   const { session } = useSession();
   const { balances, isLoading: balancesLoading } = useLeaveBalance();
-  const { requests, isLoading: requestsLoading } = useLeaveRequests();
+  const { requests, isLoading: requestsLoading, refetch } = useLeaveRequests();
   const { t, locale } = useTranslation();
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancel = useCallback(async (id: string) => {
+    const msg = locale === "zh-TW" ? "確定要取消這筆假期申請嗎？" : "Cancel this leave request?";
+    if (!window.confirm(msg)) return;
+    setCancellingId(id);
+    try {
+      const res = await fetch(`/api/leave/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+      const json: ApiResponse = await res.json();
+      if (!json.success) {
+        alert(json.error || "Failed to cancel");
+        return;
+      }
+      refetch();
+    } catch {
+      alert(locale === "zh-TW" ? "取消失敗" : "Failed to cancel");
+    } finally {
+      setCancellingId(null);
+    }
+  }, [locale, refetch]);
   const [delegatedLeaves, setDelegatedLeaves] = useState<DelegatedLeave[]>([]);
   const [delegatedLoading, setDelegatedLoading] = useState(true);
 
@@ -231,6 +255,7 @@ export default function DashboardPage() {
                     <th className="px-6 py-3">{t("dashboard.daysCol")}</th>
                     <th className="px-6 py-3">{t("dashboard.status")}</th>
                     <th className="px-6 py-3">{t("dashboard.submitted")}</th>
+                    <th className="px-6 py-3"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -252,6 +277,19 @@ export default function DashboardPage() {
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(req.created_at, "MMM d, yyyy")}
                       </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {(req.status === "pending" || req.status === "approved") && (
+                          <button
+                            onClick={() => handleCancel(req.id)}
+                            disabled={cancellingId === req.id}
+                            className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            {cancellingId === req.id
+                              ? (locale === "zh-TW" ? "取消中..." : "Cancelling...")
+                              : (locale === "zh-TW" ? "取消" : "Cancel")}
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -264,7 +302,18 @@ export default function DashboardPage() {
                 <div key={req.id} className="p-4">
                   <div className="flex items-center justify-between">
                     <LeaveTypeIcon type={req.leave_type} showLabel />
-                    <LeaveStatusBadge status={req.status} />
+                    <div className="flex items-center gap-2">
+                      <LeaveStatusBadge status={req.status} />
+                      {(req.status === "pending" || req.status === "approved") && (
+                        <button
+                          onClick={() => handleCancel(req.id)}
+                          disabled={cancellingId === req.id}
+                          className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          {locale === "zh-TW" ? "取消" : "Cancel"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                     {formatDate(req.start_date, "MMM d")} -{" "}

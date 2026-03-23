@@ -6,7 +6,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { zhTW as zhTWLocale } from "date-fns/locale/zh-TW";
 import { useSession } from "@/hooks/useSession";
-import { useEmployees } from "@/hooks/useEmployees";
+import { useQuery } from "@tanstack/react-query";
 import LeaveStatusBadge from "@/components/LeaveStatusBadge";
 import LeaveTypeIcon from "@/components/LeaveTypeIcon";
 import { useTranslation } from "@/lib/i18n/context";
@@ -21,13 +21,20 @@ export default function ReviewDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { session } = useSession();
-  const { employees } = useEmployees();
+  const { data: employeeList = [] } = useQuery({
+    queryKey: ["employeeList"],
+    queryFn: async () => {
+      const res = await fetch("/api/employees/list");
+      const json: ApiResponse<{ id: string; name: string }[]> = await res.json();
+      return json.success && json.data ? json.data : [];
+    },
+  });
   const { t, locale } = useTranslation();
   const id = params.id as string;
 
   const employeeMap = useMemo(
-    () => new Map(employees.map((e) => [e.id, e.name])),
-    [employees]
+    () => new Map(employeeList.map((e) => [e.id, e.name])),
+    [employeeList]
   );
 
   const dateFnsLocale = locale === "zh-TW" ? zhTWLocale : undefined;
@@ -180,7 +187,7 @@ export default function ReviewDetailPage() {
             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("review.employee")}</div>
             <div className="col-span-2">
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {request.employee?.name || t("common.unknown")}
+                {employeeMap.get(request.employee_id) || request.employee?.name || t("common.unknown")}
               </p>
               {request.employee?.wallet_address && (
                 <p className="text-xs text-gray-400 dark:text-gray-500">

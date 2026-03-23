@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { zhTW as zhTWLocale } from "date-fns/locale/zh-TW";
 import { useSession } from "@/hooks/useSession";
 import { useLeaveRequests } from "@/hooks/useLeaveRequests";
-import { useEmployees } from "@/hooks/useEmployees";
+import { useQuery } from "@tanstack/react-query";
 import LeaveStatusBadge from "@/components/LeaveStatusBadge";
 import LeaveTypeIcon from "@/components/LeaveTypeIcon";
 import { useTranslation } from "@/lib/i18n/context";
@@ -15,12 +15,19 @@ import type { ApiResponse } from "@/types";
 export default function AdminReviewPage() {
   const { session } = useSession();
   const { requests, isLoading, refetch } = useLeaveRequests(true);
-  const { employees } = useEmployees();
+  const { data: employeeList = [] } = useQuery({
+    queryKey: ["employeeList"],
+    queryFn: async () => {
+      const res = await fetch("/api/employees/list");
+      const json: ApiResponse<{ id: string; name: string }[]> = await res.json();
+      return json.success && json.data ? json.data : [];
+    },
+  });
   const { t, locale } = useTranslation();
 
   const employeeMap = useMemo(
-    () => new Map(employees.map((e) => [e.id, e.name])),
-    [employees]
+    () => new Map(employeeList.map((e) => [e.id, e.name])),
+    [employeeList]
   );
 
   const dateFnsLocale = locale === "zh-TW" ? zhTWLocale : undefined;
@@ -71,6 +78,29 @@ export default function AdminReviewPage() {
         </div>
       </div>
     );
+  }
+
+  async function handleCancel(id: string) {
+    const msg = locale === "zh-TW" ? "確定要取消這筆假期申請嗎？" : "Cancel this leave request?";
+    if (!window.confirm(msg)) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/leave/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+      const json: ApiResponse = await res.json();
+      if (!json.success) {
+        alert(json.error || t("admin.failedUpdate"));
+        return;
+      }
+      refetch();
+    } catch {
+      alert(t("admin.failedUpdate"));
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   async function handleAction(id: string, status: "approved" | "rejected") {
@@ -303,6 +333,7 @@ export default function AdminReviewPage() {
                     <th className="px-6 py-3">{t("admin.type")}</th>
                     <th className="px-6 py-3">{t("admin.dates")}</th>
                     <th className="px-6 py-3">{t("admin.status")}</th>
+                    <th className="px-6 py-3"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -321,6 +352,17 @@ export default function AdminReviewPage() {
                       <td className="whitespace-nowrap px-6 py-4">
                         <LeaveStatusBadge status={req.status} />
                       </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {(req.status === "approved" || req.status === "pending") && (
+                          <button
+                            onClick={() => handleCancel(req.id)}
+                            disabled={actionLoading}
+                            className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            {locale === "zh-TW" ? "取消" : "Cancel"}
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -333,7 +375,18 @@ export default function AdminReviewPage() {
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {employeeMap.get(req.employee_id) || req.employee?.name || t("common.unknown")}
                     </span>
-                    <LeaveStatusBadge status={req.status} />
+                    <div className="flex items-center gap-2">
+                      <LeaveStatusBadge status={req.status} />
+                      {(req.status === "approved" || req.status === "pending") && (
+                        <button
+                          onClick={() => handleCancel(req.id)}
+                          disabled={actionLoading}
+                          className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          {locale === "zh-TW" ? "取消" : "Cancel"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-1 flex items-center gap-2">
                     <LeaveTypeIcon type={req.leave_type} showLabel />
