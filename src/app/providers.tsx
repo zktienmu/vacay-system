@@ -21,7 +21,7 @@ const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID!;
 const metadata = {
   name: "Dinngo 請假系統",
   description: "Dinngo 請假管理系統",
-  url: typeof window !== "undefined" ? window.location.origin : "https://leave.dinngo.co",
+  url: typeof window !== "undefined" ? window.location.origin : "https://vaca-blond.vercel.app",
   icons: [],
 };
 
