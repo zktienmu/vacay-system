@@ -3,7 +3,7 @@ import { apiRateLimiter, getClientIp } from "@/lib/security/rate-limit";
 
 const PUBLIC_API_ROUTES = ["/api/auth/nonce", "/api/auth/verify"];
 const PUBLIC_PAGES = ["/login"];
-const SESSION_COOKIE = "vaca_session";
+const SESSION_COOKIE = "dinngo_leave_session";
 const STATE_CHANGING_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
 export function proxy(req: NextRequest) {

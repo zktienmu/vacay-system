@@ -15,19 +15,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vaca - Leave Management",
-  description: "Leave management system for Dinngo",
+  title: "Dinngo 請假系統",
+  description: "Dinngo 請假管理系統",
 };
 
 // Inline script to prevent flash of wrong theme
 const themeScript = `
 (function() {
   try {
-    var theme = localStorage.getItem('vaca-theme');
+    var theme = localStorage.getItem('dinngo-leave-theme');
     if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
     }
-    var locale = localStorage.getItem('vaca-locale');
+    var locale = localStorage.getItem('dinngo-leave-locale');
     if (locale === 'en') {
       document.documentElement.lang = 'en';
     } else {

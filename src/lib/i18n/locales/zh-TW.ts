@@ -27,8 +27,8 @@ const zhTW = {
     logout: "登出",
   },
   login: {
-    title: "Vaca",
-    subtitle: "Dinngo 假期管理系統",
+    title: "Dinngo 請假系統",
+    subtitle: "請假管理系統",
     connectWallet: "連接錢包",
     signing: "請在錢包中簽署訊息...",
     verifying: "驗證簽章中...",

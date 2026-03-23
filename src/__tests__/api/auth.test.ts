@@ -180,7 +180,7 @@ describe('POST /api/auth/verify', () => {
     const req = new NextRequest('http://localhost/api/auth/verify', {
       method: 'POST',
       body: JSON.stringify({
-        message: 'Sign in to Vaca',
+        message: 'Sign in to Dinngo Leave System',
         signature: '0xsig',
       }),
     })
@@ -201,7 +201,7 @@ describe('POST /api/auth/verify', () => {
     const req = new NextRequest('http://localhost/api/auth/verify', {
       method: 'POST',
       body: JSON.stringify({
-        message: 'Sign in to Vaca',
+        message: 'Sign in to Dinngo Leave System',
         signature: '0xsig',
       }),
     })
@@ -219,7 +219,7 @@ describe('POST /api/auth/verify', () => {
     const req = new NextRequest('http://localhost/api/auth/verify', {
       method: 'POST',
       body: JSON.stringify({
-        message: 'Sign in to Vaca',
+        message: 'Sign in to Dinngo Leave System',
         signature: '0xbadsig',
       }),
     })
@@ -240,7 +240,7 @@ describe('POST /api/auth/verify', () => {
     const req = new NextRequest('http://localhost/api/auth/verify', {
       method: 'POST',
       body: JSON.stringify({
-        message: 'Sign in to Vaca',
+        message: 'Sign in to Dinngo Leave System',
         signature: '0xvalidsig',
       }),
     })
@@ -268,7 +268,7 @@ describe('POST /api/auth/verify', () => {
     const req = new NextRequest('http://localhost/api/auth/verify', {
       method: 'POST',
       body: JSON.stringify({
-        message: 'Sign in to Vaca',
+        message: 'Sign in to Dinngo Leave System',
         signature: '0xvalidsig',
       }),
     })

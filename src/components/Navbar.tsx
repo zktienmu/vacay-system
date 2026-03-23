@@ -103,7 +103,7 @@ export default function Navbar() {
                   href="/dashboard"
                   className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100"
                 >
-                  Vaca {"\uD83D\uDC04"}
+                  Dinngo 請假系統
                 </Link>
               </div>
 

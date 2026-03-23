@@ -27,8 +27,8 @@ const en = {
     logout: "Logout",
   },
   login: {
-    title: "Vaca",
-    subtitle: "Leave management for Dinngo",
+    title: "Dinngo Leave",
+    subtitle: "Leave management system",
     connectWallet: "Connect Wallet",
     signing: "Please sign the message in your wallet...",
     verifying: "Verifying your signature...",

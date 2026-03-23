@@ -16,7 +16,7 @@ export const sessionOptions: SessionOptions = {
   get password() {
     return getSessionSecret();
   },
-  cookieName: "vaca_session",
+  cookieName: "dinngo_leave_session",
   cookieOptions: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

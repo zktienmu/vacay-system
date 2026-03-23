@@ -12,7 +12,7 @@ import {
 describe('siweVerifySchema', () => {
   it('accepts valid input', () => {
     const result = siweVerifySchema.safeParse({
-      message: 'Sign in to Vaca',
+      message: 'Sign in to Dinngo Leave System',
       signature: '0xabc123',
     })
     expect(result.success).toBe(true)

@@ -80,7 +80,7 @@ describe('buildNewRequestBlocks', () => {
       handover_url: 'https://docs.google.com/handover',
     })
     const employee = mockEmployee({ name: 'Alice' })
-    const blocks = buildNewRequestBlocks(request, employee, 'https://vaca.app')
+    const blocks = buildNewRequestBlocks(request, employee, 'https://leave.dinngo.co')
 
     expect(blocks).toHaveLength(4)
 
@@ -101,13 +101,13 @@ describe('buildNewRequestBlocks', () => {
 
     // Actions block has a review button with correct URL
     const actionsBlock = blocks[3] as { type: string; elements: { url: string }[] }
-    expect(actionsBlock.elements[0].url).toBe('https://vaca.app/admin/review/lr-100')
+    expect(actionsBlock.elements[0].url).toBe('https://leave.dinngo.co/admin/review/lr-100')
   })
 
   it('omits notes and handover fields when null', () => {
     const request = mockLeaveRequest({ notes: null, handover_url: null })
     const employee = mockEmployee()
-    const blocks = buildNewRequestBlocks(request, employee, 'https://vaca.app')
+    const blocks = buildNewRequestBlocks(request, employee, 'https://leave.dinngo.co')
 
     const fieldsSection = blocks[2] as { type: string; fields: { text: string }[] }
     // Only date field

@@ -6,7 +6,7 @@ import { sessionOptions, defaultSession } from '@/lib/auth/session'
 
 describe('sessionOptions', () => {
   it('has the correct cookie name', () => {
-    expect(sessionOptions.cookieName).toBe('vaca_session')
+    expect(sessionOptions.cookieName).toBe('dinngo_leave_session')
   })
 
   it('has httpOnly set to true', () => {

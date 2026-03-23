@@ -50,7 +50,7 @@ export default function LoginPage() {
       const siweMessage = new SiweMessage({
         domain: window.location.host,
         address,
-        statement: "Sign in with Ethereum to Vaca",
+        statement: "Sign in with Ethereum to Dinngo Leave System",
         uri: window.location.origin,
         version: "1",
         chainId: chainId || 1,

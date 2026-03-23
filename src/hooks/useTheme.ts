@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 
 type Theme = "light" | "dark";
 
-const STORAGE_KEY = "vaca-theme";
+const STORAGE_KEY = "dinngo-leave-theme";
 
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>("light");
