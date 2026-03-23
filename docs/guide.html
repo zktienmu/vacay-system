@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinngo 請假系統 — 使用教學</title>
+<style>
+  :root {
+    --blue: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+    --amber: #f59e0b;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+    color: var(--gray-900);
+    background: var(--gray-50);
+    line-height: 1.7;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+    color: white;
+    text-align: center;
+    padding: 80px 24px 60px;
+  }
+  .hero h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 12px; }
+  .hero p { font-size: 1.15rem; opacity: 0.9; max-width: 500px; margin: 0 auto; }
+
+  /* Nav tabs */
+  .tab-nav {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px 24px 0;
+    position: sticky;
+    top: 0;
+    background: var(--gray-50);
+    z-index: 10;
+    border-bottom: 1px solid var(--gray-200);
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    padding: 12px 28px;
+    border: none;
+    background: none;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover { color: var(--gray-700); }
+  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Container */
+  .container { max-width: 800px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* Section */
+  .section { margin-bottom: 48px; }
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--blue);
+    color: white;
+    border-radius: 50%;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .section-desc {
+    color: var(--gray-500);
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+  }
+
+  /* Mock UI */
+  .mock {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 20px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .mock-header {
+    background: var(--gray-800);
+    color: white;
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mock-header .dots {
+    display: flex; gap: 6px;
+  }
+  .mock-header .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .mock-header .dot-r { background: #ff5f57; }
+  .mock-header .dot-y { background: #febc2e; }
+  .mock-header .dot-g { background: #28c840; }
+  .mock-body { padding: 24px; }
+
+  /* Mock elements */
+  .mock-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid var(--gray-200);
+    border-radius: 12px 12px 0 0;
+    font-size: 0.85rem;
+  }
+  .mock-nav-brand { font-weight: 700; font-size: 1rem; }
+  .mock-nav-links { display: flex; gap: 12px; color: var(--gray-500); }
+  .mock-nav-links .active-link { color: var(--blue); font-weight: 600; }
+
+  .mock-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 8px 0;
+  }
+
+  .mock-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--gray-700);
+    background: white;
+  }
+  .mock-select { composes: mock-input; appearance: none; }
+
+  .mock-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .mock-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: none;
+    cursor: default;
+  }
+  .mock-btn-blue { background: var(--blue); color: white; }
+  .mock-btn-green { background: var(--green); color: white; }
+  .mock-btn-red { background: var(--red); color: white; }
+  .mock-btn-outline { background: white; color: var(--gray-700); border: 1px solid var(--gray-300); }
+
+  .mock-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge-pending { background: #dbeafe; color: #1d4ed8; }
+  .badge-approved { background: #dcfce7; color: #15803d; }
+  .badge-rejected { background: #fee2e2; color: #b91c1c; }
+
+  .mock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mock-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+  }
+  .mock-checkbox.checked {
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+  .mock-checkbox input[type="checkbox"] { pointer-events: none; }
+
+  .mock-balance {
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  .mock-balance .type { font-size: 0.8rem; color: var(--gray-500); margin-bottom: 4px; }
+  .mock-balance .num { font-size: 1.8rem; font-weight: 700; color: var(--blue); }
+  .mock-balance .total { font-size: 0.8rem; color: var(--gray-500); }
+
+  /* Callout */
+  .callout {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin: 16px 0;
+    font-size: 0.9rem;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .callout-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .callout-warn { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .callout-tip { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .callout-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+  /* Annotation arrow */
+  .annotated {
+    position: relative;
+  }
+  .annotation {
+    position: absolute;
+    background: var(--red);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 5;
+  }
+
+  /* Steps list */
+  .steps { list-style: none; counter-reset: step; }
+  .steps li {
+    counter-increment: step;
+    padding: 12px 0 12px 48px;
+    position: relative;
+    border-left: 2px solid var(--gray-200);
+    margin-left: 16px;
+  }
+  .steps li:last-child { border-left: 2px solid transparent; }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: -14px;
+    top: 12px;
+    width: 28px;
+    height: 28px;
+    background: var(--blue);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .steps li strong { color: var(--gray-900); }
+
+  /* Table */
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.9rem;
+  }
+  .info-table th, .info-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .info-table th {
+    background: var(--gray-100);
+    font-weight: 600;
+    color: var(--gray-700);
+  }
+  .info-table td { color: var(--gray-700); }
+
+  .highlight { background: #fef3c7; padding: 2px 6px; border-radius: 4px; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.8rem; }
+    .hero p { font-size: 1rem; }
+    .mock-grid { grid-template-columns: 1fr; }
+    .mock-nav-links { display: none; }
+    .tab-btn { padding: 10px 16px; font-size: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Dinngo 請假系統</h1>
+  <p>使用教學手冊 — 從登入到申請、審核，一步步教你操作</p>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('employee')">員工申請假期</button>
+  <button class="tab-btn" onclick="switchTab('admin')">主管審核假期</button>
+</div>
+
+<!-- ==================== 員工教學 ==================== -->
+<div id="tab-employee" class="tab-content active">
+<div class="container">
+
+  <!-- Step 1: Login -->
+  <div class="section">
+    <h2 class="section-title"><span class="num">1</span> 登入系統</h2>
+    <p class="section-desc">使用你的以太坊錢包（如 MetaMask）登入系統。</p>
+
+    <div class="mock">
+      <div class="mock-header">
+        <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+        <span>leave.dinngo.co/login</span>
+      </div>
+      <div class="mock-body" style="text-align:center; padding: 48px 24px;">
+        <div style="font-size:2rem; font-weight:800; margin-bottom:4px;">Dinngo 請假系統</div>
+        <div style="color:var(--gray-500); margin-bottom:32px;">請假管理系統</div>
+        <div class="mock-btn mock-btn-blue" style="margin:0 auto; padding:14px 32px; font-size:1rem;">
+          Connect Wallet
+        </div>
+      </div>
+    </div>
+
+    <ul class="steps">
+      <li>點擊 <strong>Connect Wallet</strong> 按鈕</li>
+      <li>在彈出的錢包視窗中選擇你的帳戶並<strong>簽署訊息</strong></li>
+      <li>系統驗證成功後，自動跳轉到儀表板</li>
+    </ul>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ️</span>
+      <div>第一次使用前，請確認管理員已經將你的錢包地址加入員工名單。如果登入後看到錯誤訊息，請聯繫管理員。</div>
+    </div>
+  </div>
+
+  <!-- Step 2: Dashboard -->
+  <div class="section">
+    <h2 class="section-title"><span class="num">2</span> 查看儀表板</h2>
+    <p class="section-desc">登入後首先看到的是你的假期餘額和最近的申請紀錄。</p>
+
+    <div class="mock">
+      <div class="mock-header">
+        <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+        <span>leave.dinngo.co/dashboard</span>
+      </div>
+      <div class="mock-nav">
+        <span class="mock-nav-brand">Dinngo 請假系統</span>
+        <div class="mock-nav-links">
+          <span class="active-link">儀表板</span>
+          <span>申請假期</span>
+          <span>團隊行事曆</span>
+        </div>
+      </div>
+      <div class="mock-body">
+        <div style="margin-bottom:8px; font-size:1.2rem; font-weight:700;">歡迎回來，王小明</div>
+        <div style="color:var(--gray-500); font-size:0.9rem; margin-bottom:20px;">以下是您的假期餘額及最近申請概覽。</div>
+
+        <div style="font-weight:600; margin-bottom:12px;">假期餘額</div>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom:28px;">
+          <div class="mock-balance">
+            <div class="type">🌴 特休</div>
+            <div class="num">12</div>
+            <div class="total">/ 15 天</div>
+          </div>
+          <div class="mock-balance">
+            <div class="type">👤 事假</div>
+            <div class="num" style="color:var(--green);">∞</div>
+            <div class="total">無限制</div>
+          </div>
+          <div class="mock-balance">
+            <div class="type">🏥 病假</div>
+            <div class="num" style="color:var(--green);">∞</div>
+            <div class="total">無限制</div>
+          </div>
+        </div>
+
+        <div style="font-weight:600; margin-bottom:12px;">最近申請</div>
+        <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+          <tr style="background:var(--gray-100); color:var(--gray-500);">
+            <td style="padding:8px 12px;">類型</td>
+            <td style="padding:8px 12px;">日期</td>
+            <td style="padding:8px 12px;">天數</td>
+            <td style="padding:8px 12px;">狀態</td>
+            <td style="padding:8px 12px;"></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--gray-200);">
+            <td style="padding:10px 12px;">🌴 特休</td>
+            <td style="padding:10px 12px;">Apr 1 - Apr 3, 2026</td>
+            <td style="padding:10px 12px;">3 天</td>
+            <td style="padding:10px 12px;"><span class="mock-badge badge-approved">已核准</span></td>
+            <td style="padding:10px 12px;"><span style="color:var(--red); font-size:0.85rem; cursor:pointer;">取消</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--gray-200);">
+            <td style="padding:10px 12px;">👤 事假</td>
+            <td style="padding:10px 12px;">Apr 15, 2026</td>
+            <td style="padding:10px 12px;">1 天</td>
+            <td style="padding:10px 12px;"><span class="mock-badge badge-pending">審核中</span></td>
+            <td style="padding:10px 12px;"><span style="color:var(--red); font-size:0.85rem; cursor:pointer;">取消</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <span class="callout-icon">💡</span>
+      <div>在「最近申請」中，你可以直接點擊 <strong style="color:var(--red);">取消</strong> 來取消審核中或已核准的假期。取消後 Google Calendar 上的事件也會自動移除。</div>
+    </div>
+  </div>
+
+  <!-- Step 3: Apply -->
+  <div class="section">
+    <h2 class="section-title"><span class="num">3</span> 申請假期</h2>
+    <p class="section-desc">點擊「申請假期」進入表單頁面，填寫假期資訊。</p>
+
+    <div class="mock">
+      <div class="mock-header">
+        <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+        <span>leave.dinngo.co/leave/new</span>
+      </div>
+      <div class="mock-body">
+        <div style="font-size:1.2rem; font-weight:700; margin-bottom:4px;">申請假期</div>
+        <div style="color:var(--gray-500); font-size:0.9rem; margin-bottom:24px;">填寫以下資訊以提交假期申請。</div>
+
+        <div class="mock-card" style="padding:20px;">
+          <!-- Leave type -->
+          <div style="margin-bottom:20px;">
+            <span class="mock-label">假別</span>
+            <div class="mock-input">🌴 特休</div>
+            <div style="font-size:0.75rem; color:var(--gray-500); margin-top:4px;">餘額: 12 / 15 天剩餘</div>
+          </div>
+
+          <!-- Dates -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+            <div>
+              <span class="mock-label">開始日期</span>
+              <div class="mock-input">2026-04-06</div>
+            </div>
+            <div>
+              <span class="mock-label">結束日期</span>
+              <div class="mock-input">2026-04-08</div>
+            </div>
+          </div>
+
+          <!-- Working days -->
+          <div style="background:#eff6ff; border-radius:8px; padding:12px 16px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:#1d4ed8; font-size:0.9rem; font-weight:600;">工作天數</span>
+            <span style="color:#1e3a5f; font-size:1.2rem; font-weight:700;">3 天</span>
+          </div>
+
+          <!-- Delegates -->
+          <div style="margin-bottom:20px;">
+            <span class="mock-label">代理人 <span style="color:var(--red);">*</span></span>
+            <div style="border:1px solid #93c5fd; border-radius:8px; padding:12px;">
+              <div class="mock-grid">
+                <div class="mock-checkbox checked">
+                  <input type="checkbox" checked disabled> 李小華
+                </div>
+                <div class="mock-checkbox">
+                  <input type="checkbox" disabled> 張大明
+                </div>
+                <div class="mock-checkbox checked">
+                  <input type="checkbox" checked disabled> 陳美玲
+                </div>
+                <div class="mock-checkbox">
+                  <input type="checkbox" disabled> 林志偉
+                </div>
+              </div>
+            </div>
+            <div style="font-size:0.75rem; color:var(--gray-500); margin-top:4px;">請選擇一位以上的代理人，負責您不在時的工作。</div>
+          </div>
+
+          <!-- Handover -->
+          <div style="margin-bottom:20px;">
+            <span class="mock-label">交接事項 <span style="color:var(--red);">*</span></span>
+            <div class="mock-input" style="border-color:var(--gray-300);">https://docs.google.com/document/d/1abc...</div>
+            <div style="font-size:0.75rem; color:var(--gray-500); margin-top:4px;">連續請假 3 天以上需提供交接事項文件連結</div>
+          </div>
+
+          <!-- Notes -->
+          <div style="margin-bottom:20px;">
+            <span class="mock-label">備註（選填）</span>
+            <div class="mock-input" style="height:60px; color:var(--gray-500);">家庭旅遊</div>
+          </div>
+
+          <!-- Buttons -->
+          <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--gray-200); padding-top:16px;">
+            <span class="mock-btn mock-btn-outline">取消</span>
+            <span class="mock-btn mock-btn-blue">送出申請</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>欄位</th>
+          <th>說明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>假別</strong></td>
+          <td>選擇假期類型：特休、事假、病假、公假、無薪假、遠端工作</td>
+        </tr>
+        <tr>
+          <td><strong>日期</strong></td>
+          <td>選擇開始與結束日期，系統自動計算工作天數（排除週末與國定假日）</td>
+        </tr>
+        <tr>
+          <td><strong>代理人</strong> <span style="color:var(--red);">必填</span></td>
+          <td>勾選至少一位同事作為你休假期間的代理人</td>
+        </tr>
+        <tr>
+          <td><strong>交接事項</strong></td>
+          <td>連續請假 <span class="highlight">3 天以上</span> 時為必填，提供交接文件的連結</td>
+        </tr>
+        <tr>
+          <td><strong>備註</strong></td>
+          <td>選填，可填寫額外說明</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div>
+        <strong>注意事項：</strong>
+        <ul style="margin-top:6px; padding-left:18px;">
+          <li>代理人為<strong>必填</strong>，至少選擇一位</li>
+          <li>連續 3 天以上的假期<strong>必須提供交接文件連結</strong></li>
+          <li>送出後會自動通知所有主管和管理員（透過 Slack）</li>
+          <li>假期核准後會自動建立 Google Calendar 事件</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: After submit -->
+  <div class="section">
+    <h2 class="section-title"><span class="num">4</span> 送出後的流程</h2>
+    <p class="section-desc">假期申請送出後，系統會自動處理以下事項：</p>
+
+    <div style="display:grid; gap:12px;">
+      <div class="mock-card" style="display:flex; gap:12px; align-items:flex-start;">
+        <span style="font-size:1.5rem;">📱</span>
+        <div>
+          <div style="font-weight:600;">Slack 通知</div>
+          <div style="font-size:0.9rem; color:var(--gray-500);">所有主管收到 DM 通知，同時在 ops-vacay 頻道公告</div>
+        </div>
+      </div>
+      <div class="mock-card" style="display:flex; gap:12px; align-items:flex-start;">
+        <span style="font-size:1.5rem;">⏳</span>
+        <div>
+          <div style="font-weight:600;">等待審核</div>
+          <div style="font-size:0.9rem; color:var(--gray-500);">狀態顯示「審核中」，你可以在儀表板追蹤進度</div>
+        </div>
+      </div>
+      <div class="mock-card" style="display:flex; gap:12px; align-items:flex-start;">
+        <span style="font-size:1.5rem;">✅</span>
+        <div>
+          <div style="font-weight:600;">核准後</div>
+          <div style="font-size:0.9rem; color:var(--gray-500);">你會收到 Slack 通知、代理人收到通知、Google Calendar 自動建立事件</div>
+        </div>
+      </div>
+      <div class="mock-card" style="display:flex; gap:12px; align-items:flex-start;">
+        <span style="font-size:1.5rem;">🚫</span>
+        <div>
+          <div style="font-weight:600;">取消假期</div>
+          <div style="font-size:0.9rem; color:var(--gray-500);">在儀表板點擊「取消」即可取消審核中或已核准的假期</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== 主管教學 ==================== -->
+<div id="tab-admin" class="tab-content">
+<div class="container">
+
+  <!-- Step 1: Access -->
+  <div class="section">
+    <h2 class="section-title"><span class="num">1</span> 進入審核頁面</h2>
+    <p class="section-desc">主管和管理員在導覽列中會看到「審核」連結。</p>
+
+    <div class="mock">
+      <div class="mock-header">
+        <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+        <span>leave.dinngo.co/admin</span>
+      </div>
+      <div class="mock-nav">
+        <span class="mock-nav-brand">Dinngo 請假系統</span>
+        <div class="mock-nav-links">
+          <span>儀表板</span>
+          <span>申請假期</span>
+          <span>團隊行事曆</span>
+          <span class="active-link" style="background:#eff6ff; padding:4px 10px; border-radius:6px;">審核</span>
+          <span>員工管理</span>
+        </div>
+      </div>
+      <div class="mock-body" style="padding:16px 24px;">
+        <div style="font-size:1.2rem; font-weight:700;">審核假期申請</div>
+        <div style="color:var(--gray-500); font-size:0.9rem;">核准或駁回團隊成員的假期申請。</div>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">ℹ️</span>
+      <div>只有 <strong>管理員 (admin)</strong> 和 <strong>部門主管 (manager)</strong> 才能看到「審核」頁面。一般員工無法存取。</div>
+    </div>
+  </div>
+
+  <!-- Step 2: Review pending -->
+  <div class="section">
+    <h2 class="section-title"><span class="num">2</span> 審核待處理申請</h2>
+    <p class="section-desc">待審核的假期申請會列在頁面上方。點擊任一筆可展開詳細資訊。</p>
+
+    <div class="mock">
+      <div class="mock-header">
+        <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+        <span>審核頁 — 待審核申請</span>
+      </div>
+      <div class="mock-body">
+        <div style="font-weight:600; margin-bottom:12px;">待審核申請 (2)</div>
+
+        <!-- Collapsed -->
+        <div class="mock-card" style="padding:0; overflow:hidden;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; cursor:pointer;">
+            <div>
+              <div style="font-weight:600; font-size:0.9rem;">王小明</div>
+              <div style="font-size:0.8rem; color:var(--gray-500);">Apr 6 - Apr 8, 2026 · 3 天</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:0.85rem;">🌴 特休</span>
+              <span style="color:var(--gray-500);">▼</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expanded -->
+        <div class="mock-card" style="padding:0; overflow:hidden; border-color:var(--blue);">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; background:white;">
+            <div>
+              <div style="font-weight:600; font-size:0.9rem;">李小華</div>
+              <div style="font-size:0.8rem; color:var(--gray-500);">Apr 15 - Apr 16, 2026 · 2 天</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:0.85rem;">👤 事假</span>
+              <span style="color:var(--gray-500);">▲</span>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--gray-200); background:var(--gray-50); padding:16px 20px;">
+            <table style="width:100%; font-size:0.85rem;">
+              <tr><td style="color:var(--gray-500); padding:4px 0; width:100px;">日期</td><td style="padding:4px 0;">April 15, 2026 - April 16, 2026</td></tr>
+              <tr><td style="color:var(--gray-500); padding:4px 0;">工作天數</td><td style="padding:4px 0; font-weight:600;">2 天</td></tr>
+              <tr><td style="color:var(--gray-500); padding:4px 0;">代理人</td><td style="padding:4px 0;">張大明、陳美玲</td></tr>
+              <tr><td style="color:var(--gray-500); padding:4px 0;">備註</td><td style="padding:4px 0;">家中有事</td></tr>
+              <tr><td style="color:var(--gray-500); padding:4px 0;">提交時間</td><td style="padding:4px 0;">March 20, 2026 at 2:30 PM</td></tr>
+            </table>
+            <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--gray-200); padding-top:14px; margin-top:14px;">
+              <span class="mock-btn mock-btn-red">駁回</span>
+              <span class="mock-btn mock-btn-green">核准</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="steps">
+      <li>點擊待審核的假期申請<strong>展開詳細資訊</strong></li>
+      <li>查看申請人、日期、天數、<strong>代理人</strong>、備註等資訊</li>
+      <li>點擊 <strong style="color:var(--green);">核准</strong> 或 <strong style="color:var(--red);">駁回</strong>，系統會要求你確認</li>
+      <li>確認後，申請人會透過 Slack 收到通知</li>
+    </ul>
+  </div>
+
+  <!-- Step 3: After approval -->
+  <div class="section">
+    <h2 class="section-title"><span class="num">3</span> 核准 / 駁回後的自動化</h2>
+    <p class="section-desc">系統會自動處理通知和行事曆。</p>
+
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>動作</th>
+          <th>系統自動執行</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="mock-badge badge-approved">核准</span></td>
+          <td>
+            <ul style="padding-left:18px; margin:0;">
+              <li>Slack DM 通知申請人</li>
+              <li>Slack DM 通知所有代理人（含交接文件連結）</li>
+              <li>ops-vacay 頻道公告</li>
+              <li>Google Calendar 建立全天事件</li>
+            </ul>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="mock-badge badge-rejected">駁回</span></td>
+          <td>Slack DM 通知申請人</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Step 4: Cancel -->
+  <div class="section">
+    <h2 class="section-title"><span class="num">4</span> 取消已審核的假期</h2>
+    <p class="section-desc">在「最近審核」區域，你可以取消已核准的假期。</p>
+
+    <div class="mock">
+      <div class="mock-header">
+        <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+        <span>審核頁 — 最近審核</span>
+      </div>
+      <div class="mock-body">
+        <div style="font-weight:600; margin-bottom:12px;">最近審核</div>
+        <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+          <tr style="background:var(--gray-100); color:var(--gray-500);">
+            <td style="padding:8px 12px;">員工</td>
+            <td style="padding:8px 12px;">類型</td>
+            <td style="padding:8px 12px;">日期</td>
+            <td style="padding:8px 12px;">狀態</td>
+            <td style="padding:8px 12px;"></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--gray-200);">
+            <td style="padding:10px 12px; font-weight:600;">王小明</td>
+            <td style="padding:10px 12px;">🌴 特休</td>
+            <td style="padding:10px 12px;">Apr 1 - Apr 3, 2026</td>
+            <td style="padding:10px 12px;"><span class="mock-badge badge-approved">已核准</span></td>
+            <td style="padding:10px 12px;"><span style="color:var(--red); font-size:0.85rem; cursor:pointer;">取消</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--gray-200);">
+            <td style="padding:10px 12px; font-weight:600;">李小華</td>
+            <td style="padding:10px 12px;">🏥 病假</td>
+            <td style="padding:10px 12px;">Mar 20, 2026</td>
+            <td style="padding:10px 12px;"><span class="mock-badge badge-rejected">已駁回</span></td>
+            <td style="padding:10px 12px;"></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div>取消已核准的假期會：自動從 Google Calendar 移除事件，並在 Slack ops-vacay 頻道公告取消訊息。</div>
+    </div>
+  </div>
+
+  <!-- Step 5: Detail page -->
+  <div class="section">
+    <h2 class="section-title"><span class="num">5</span> 查看申請詳情</h2>
+    <p class="section-desc">點擊 Slack 通知中的「審核申請」按鈕，可直接進入該筆假期的詳情頁。</p>
+
+    <div class="mock">
+      <div class="mock-header">
+        <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+        <span>leave.dinngo.co/admin/review/lr-123</span>
+      </div>
+      <div class="mock-body">
+        <div style="font-size:0.85rem; color:var(--blue); margin-bottom:16px;">← 返回審核</div>
+        <div class="mock-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div style="font-size:1.1rem; font-weight:700;">假期申請詳情</div>
+            <span class="mock-badge badge-pending">審核中</span>
+          </div>
+          <table style="width:100%; font-size:0.85rem;">
+            <tr style="border-bottom:1px solid var(--gray-200);"><td style="color:var(--gray-500); padding:10px 0; width:100px;">員工</td><td style="padding:10px 0;"><strong>王小明</strong><br><span style="color:var(--gray-500); font-size:0.8rem;">0x1234...5678</span></td></tr>
+            <tr style="border-bottom:1px solid var(--gray-200);"><td style="color:var(--gray-500); padding:10px 0;">假別</td><td style="padding:10px 0;">🌴 特休</td></tr>
+            <tr style="border-bottom:1px solid var(--gray-200);"><td style="color:var(--gray-500); padding:10px 0;">日期</td><td style="padding:10px 0;">April 6, 2026 - April 8, 2026</td></tr>
+            <tr style="border-bottom:1px solid var(--gray-200);"><td style="color:var(--gray-500); padding:10px 0;">工作天數</td><td style="padding:10px 0; font-weight:600;">3 天</td></tr>
+            <tr style="border-bottom:1px solid var(--gray-200);"><td style="color:var(--gray-500); padding:10px 0;">代理人</td><td style="padding:10px 0;">李小華、陳美玲</td></tr>
+            <tr style="border-bottom:1px solid var(--gray-200);"><td style="color:var(--gray-500); padding:10px 0;">交接事項</td><td style="padding:10px 0;"><a href="#" style="color:var(--blue);">https://docs.google.com/...</a></td></tr>
+            <tr style="border-bottom:1px solid var(--gray-200);"><td style="color:var(--gray-500); padding:10px 0;">備註</td><td style="padding:10px 0;">家庭旅遊</td></tr>
+          </table>
+          <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--gray-200); padding-top:14px; margin-top:8px;">
+            <span class="mock-btn mock-btn-red">駁回</span>
+            <span class="mock-btn mock-btn-green">核准</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
