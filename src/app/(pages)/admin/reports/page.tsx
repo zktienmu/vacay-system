@@ -12,7 +12,7 @@ import LeaveTypeIcon from "@/components/LeaveTypeIcon";
 
 export default function AdminReportsPage() {
   const { session } = useSession();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { requests, isLoading: requestsLoading } = useLeaveRequests(true);
   const { employees, isLoading: employeesLoading } = useEmployees();
 
