@@ -12,6 +12,8 @@ const {
   mockNotifyChainDelegation,
   mockCreateLeaveEvent,
   mockDeleteLeaveEvent,
+  mockCreateHandoverTask,
+  mockDeleteAsanaTask,
   mockSupabaseFrom,
 } = vi.hoisted(() => ({
   mockNotifyNewRequest: vi.fn().mockResolvedValue(undefined),
@@ -22,6 +24,8 @@ const {
   mockNotifyChainDelegation: vi.fn().mockResolvedValue(undefined),
   mockCreateLeaveEvent: vi.fn().mockResolvedValue(null),
   mockDeleteLeaveEvent: vi.fn().mockResolvedValue(undefined),
+  mockCreateHandoverTask: vi.fn().mockResolvedValue(null),
+  mockDeleteAsanaTask: vi.fn().mockResolvedValue(undefined),
   mockSupabaseFrom: vi.fn(),
 }))
 
@@ -37,6 +41,11 @@ vi.mock('@/lib/slack/notify', () => ({
 vi.mock('@/lib/google/calendar', () => ({
   createLeaveEvent: mockCreateLeaveEvent,
   deleteLeaveEvent: mockDeleteLeaveEvent,
+}))
+
+vi.mock('@/lib/asana/tasks', () => ({
+  createHandoverTask: mockCreateHandoverTask,
+  deleteAsanaTask: mockDeleteAsanaTask,
 }))
 
 vi.mock('@/lib/supabase/client', () => ({
@@ -559,5 +568,83 @@ describe('onLeaveRequestCancelled', () => {
     // Slack notification is skipped (no employee), but calendar cleanup still happens
     expect(mockNotifyCancelled).not.toHaveBeenCalled()
     expect(mockDeleteLeaveEvent).toHaveBeenCalledWith('gcal-orphan')
+  })
+
+  it('cleans up Asana tasks when leave is cancelled', async () => {
+    const employee = mockEmployee({ id: 'emp-001' })
+    setupEmployeeFetch(employee)
+
+    const request = mockLeaveRequest({
+      employee_id: 'emp-001',
+      calendar_event_id: null,
+      asana_task_ids: ['asana-task-1', 'asana-task-2'],
+    })
+
+    await onLeaveRequestCancelled(request)
+
+    expect(mockDeleteAsanaTask).toHaveBeenCalledTimes(2)
+    expect(mockDeleteAsanaTask).toHaveBeenCalledWith('asana-task-1')
+    expect(mockDeleteAsanaTask).toHaveBeenCalledWith('asana-task-2')
+  })
+})
+
+describe('Asana integration in onLeaveRequestApproved', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('creates Asana tasks for delegates with asana_user_gid', async () => {
+    const employee = mockEmployee({ id: 'emp-001', name: 'Alice' })
+    const delegate = mockEmployee({
+      id: 'del-001',
+      name: 'Bob',
+      slack_user_id: 'U-bob',
+      asana_user_gid: 'asana-bob-123',
+    })
+
+    setupApprovalFlow(employee, [delegate])
+    mockCreateLeaveEvent.mockResolvedValueOnce(null)
+    mockCreateHandoverTask.mockResolvedValueOnce('asana-task-99')
+
+    const request = mockLeaveRequest({
+      employee_id: 'emp-001',
+      delegate_ids: ['del-001'],
+      delegate_assignments: [
+        { delegate_id: 'del-001', dates: ['2026-04-01', '2026-04-02'], handover_note: 'Handle tickets' },
+      ],
+    })
+
+    await onLeaveRequestApproved(request)
+
+    expect(mockCreateHandoverTask).toHaveBeenCalledTimes(1)
+    expect(mockCreateHandoverTask).toHaveBeenCalledWith({
+      assigneeGid: 'asana-bob-123',
+      employeeName: 'Alice',
+      handoverNote: 'Handle tickets',
+      delegateName: 'Bob',
+      startDate: '2026-04-01',
+      endDate: '2026-04-03',
+    })
+  })
+
+  it('skips Asana task creation for delegates without asana_user_gid', async () => {
+    const employee = mockEmployee({ id: 'emp-001', name: 'Alice' })
+    const delegate = mockEmployee({
+      id: 'del-001',
+      name: 'Bob',
+      asana_user_gid: null,
+    })
+
+    setupApprovalFlow(employee, [delegate])
+    mockCreateLeaveEvent.mockResolvedValueOnce(null)
+
+    const request = mockLeaveRequest({
+      employee_id: 'emp-001',
+      delegate_ids: ['del-001'],
+    })
+
+    await onLeaveRequestApproved(request)
+
+    expect(mockCreateHandoverTask).not.toHaveBeenCalled()
   })
 })

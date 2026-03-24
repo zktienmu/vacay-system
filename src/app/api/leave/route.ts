@@ -239,6 +239,7 @@ export const POST = withAuth(
         delegate_ids: resolvedDelegateIds,
         delegate_assignments: delegate_assignments ?? [],
         chain_delegations: resolvedChainDelegations,
+        asana_task_ids: [],
         handover_url: handover_url ?? null,
         notes: notes ?? null,
         status: isAdminBackfill ? "approved" : "pending",

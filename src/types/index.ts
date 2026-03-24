@@ -16,6 +16,7 @@ export interface Employee {
   wallet_address: string;
   name: string;
   slack_user_id: string | null;
+  asana_user_gid: string | null;
   start_date: string; // ISO date
   role: "admin" | "employee";
   department: "engineering" | "admin";
@@ -76,6 +77,7 @@ export interface LeaveRequest {
   reviewed_by: string | null;
   reviewed_at: string | null;
   calendar_event_id: string | null;
+  asana_task_ids: string[];
   created_at: string;
   updated_at: string;
 }
