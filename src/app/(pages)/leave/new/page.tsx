@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,7 +15,7 @@ import { useSession } from "@/hooks/useSession";
 import { getLeaveTypeEmoji } from "@/components/LeaveTypeIcon";
 import { useTranslation } from "@/lib/i18n/context";
 import { useQuery } from "@tanstack/react-query";
-import type { LeaveType, ApiResponse, DelegateAssignment } from "@/types";
+import type { LeaveType, ApiResponse, DelegateAssignment, ChainDelegation } from "@/types";
 
 const LEAVE_TYPES: LeaveType[] = [
   "annual",
@@ -156,6 +156,52 @@ export default function NewLeavePage() {
       .map(([id]) => id);
   }, [delegateMatrix]);
 
+  // Chain delegation: detect if current user is a delegate for someone else on overlapping dates
+  interface ChainDuty {
+    original_leave_id: string;
+    original_employee_id: string;
+    original_employee_name: string;
+    overlapping_dates: string[];
+    handover_note: string | null;
+  }
+
+  const { data: chainDuties = [] } = useQuery<ChainDuty[]>({
+    queryKey: ["chainDuties", startDate, endDate, session?.employee_id],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/leave/chain-duties?start_date=${startDate}&end_date=${endDate}`
+      );
+      const json: ApiResponse<ChainDuty[]> = await res.json();
+      return json.success && json.data ? json.data : [];
+    },
+    enabled: !!startDate && !!endDate && workingDays > 0,
+  });
+
+  // Chain reassignment: { originalLeaveId -> reassignedToDelegateId }
+  const [chainReassignments, setChainReassignments] = useState<Record<string, string>>({});
+
+  // Auto-fill chain reassignments when only 1 delegate is selected; clean up orphaned assignments
+  useEffect(() => {
+    if (chainDuties.length === 0) return;
+    if (selectedDelegateIds.length === 1) {
+      const auto: Record<string, string> = {};
+      for (const duty of chainDuties) {
+        auto[duty.original_leave_id] = selectedDelegateIds[0];
+      }
+      setChainReassignments(auto);
+    } else {
+      setChainReassignments((prev) => {
+        const cleaned: Record<string, string> = {};
+        for (const [leaveId, delegateId] of Object.entries(prev)) {
+          if (selectedDelegateIds.includes(delegateId)) {
+            cleaned[leaveId] = delegateId;
+          }
+        }
+        return cleaned;
+      });
+    }
+  }, [selectedDelegateIds, chainDuties]);
+
   // Check if a delegate is on leave for a specific date
   const isOnLeave = useCallback(
     (delegateId: string, date: string): boolean => {
@@ -289,6 +335,19 @@ export default function NewLeavePage() {
           : "Every working day must have at least one delegate assigned"
       );
     }
+    // Chain delegation: every inherited duty must have an assigned delegate
+    if (chainDuties.length > 0 && selectedDelegateIds.length > 0) {
+      const allChainAssigned = chainDuties.every(
+        (d) => chainReassignments[d.original_leave_id]
+      );
+      if (!allChainAssigned) {
+        errors.push(
+          locale === "zh-TW"
+            ? "請為每項代理轉移指定接手人"
+            : "Please assign a delegate for each inherited duty"
+        );
+      }
+    }
     // Per-delegate handover notes required when handover_url is NOT required (< 3 days) and delegates are selected
     if (!handoverRequired && selectedDelegateIds.length > 0) {
       const missingNotes = selectedDelegateIds.some(
@@ -303,7 +362,7 @@ export default function NewLeavePage() {
       }
     }
     return errors;
-  }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale, handoverRequired, handoverUrl, selectedDelegateIds, allDatesCovered, delegateNotes]);
+  }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale, handoverRequired, handoverUrl, selectedDelegateIds, allDatesCovered, delegateNotes, chainDuties, chainReassignments]);
 
   const canSubmit =
     startDate && endDate && workingDays > 0 && validationErrors.length === 0 && !submitting &&
@@ -320,6 +379,17 @@ export default function NewLeavePage() {
       const delegateAssignments = buildDelegateAssignments();
       const delegateIds = [...new Set(delegateAssignments.map((a) => a.delegate_id))];
 
+      // Build chain_delegations from chain duties + reassignments
+      const chainDelegationsPayload: ChainDelegation[] = chainDuties
+        .filter((d) => chainReassignments[d.original_leave_id])
+        .map((d) => ({
+          original_leave_id: d.original_leave_id,
+          original_employee_id: d.original_employee_id,
+          reassigned_to: chainReassignments[d.original_leave_id],
+          dates: d.overlapping_dates,
+          handover_note: d.handover_note,
+        }));
+
       const res = await fetch("/api/leave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -329,6 +399,9 @@ export default function NewLeavePage() {
           end_date: endDate,
           delegate_ids: delegateIds,
           delegate_assignments: delegateAssignments,
+          ...(chainDelegationsPayload.length > 0 && {
+            chain_delegations: chainDelegationsPayload,
+          }),
           handover_url: handoverUrl.trim() || null,
           notes: notes.trim() || null,
         }),
@@ -742,6 +815,83 @@ export default function NewLeavePage() {
           {/* Handover notes per delegate */}
           {workingDays > 0 && !handoverRequired && renderDelegateHandoverNotes()}
           {workingDays > 0 && handoverRequired && renderOptionalDelegateHandoverNotes()}
+
+          {/* Chain delegation reassignment */}
+          {chainDuties.length > 0 && (
+            <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-600 dark:bg-amber-900/20">
+              <p className="mb-3 text-sm font-medium text-amber-800 dark:text-amber-300">
+                {locale === "zh-TW"
+                  ? "⚠️ 你目前是以下同事的代理人，請指定接手人"
+                  : "⚠️ You are currently a delegate for the following colleagues. Please assign a replacement."}
+              </p>
+              <div className="space-y-3">
+                {chainDuties.map((duty) => {
+                  const shortDates = duty.overlapping_dates
+                    .map((d) => {
+                      const date = parseISO(d);
+                      return format(date, "MM/dd");
+                    })
+                    .join(", ");
+                  return (
+                    <div
+                      key={duty.original_leave_id}
+                      className="rounded-md border border-amber-200 bg-white p-3 dark:border-amber-700 dark:bg-gray-800"
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {duty.original_employee_name}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {shortDates}
+                        </span>
+                      </div>
+                      {duty.handover_note && (
+                        <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                          {locale === "zh-TW" ? "交接備註：" : "Handover: "}
+                          {duty.handover_note}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {locale === "zh-TW" ? "指定接手人：" : "Assign to: "}
+                        </span>
+                        {selectedDelegateIds.length === 0 ? (
+                          <span className="text-xs text-gray-400 dark:text-gray-500">
+                            {locale === "zh-TW"
+                              ? "請先選擇代理人"
+                              : "Please select delegates first"}
+                          </span>
+                        ) : (
+                          <select
+                            value={chainReassignments[duty.original_leave_id] ?? ""}
+                            onChange={(e) =>
+                              setChainReassignments((prev) => ({
+                                ...prev,
+                                [duty.original_leave_id]: e.target.value,
+                              }))
+                            }
+                            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                          >
+                            <option value="">
+                              {locale === "zh-TW" ? "-- 請選擇 --" : "-- Select --"}
+                            </option>
+                            {selectedDelegateIds.map((id) => {
+                              const candidate = delegateCandidates.find((c) => c.id === id);
+                              return (
+                                <option key={id} value={id}>
+                                  {candidate?.name ?? id}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
         )}
 

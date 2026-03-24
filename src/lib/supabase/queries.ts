@@ -191,6 +191,7 @@ export async function getLeaveRequests(filters: {
   return (data ?? []).map((r: Record<string, unknown>) => ({
     delegate_ids: [],
     delegate_assignments: [],
+    chain_delegations: [],
     ...r,
   })) as unknown as LeaveRequest[];
 }
@@ -209,7 +210,7 @@ export async function getLeaveRequestById(
     throw error;
   }
 
-  return { delegate_ids: [], delegate_assignments: [], ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], ...data } as LeaveRequest;
 }
 
 export async function createLeaveRequest(
@@ -220,11 +221,12 @@ export async function createLeaveRequest(
 ): Promise<LeaveRequest> {
   // Only include array fields when non-empty, so DB defaults are used
   // and inserts work before migrations add the columns.
-  const { delegate_ids, delegate_assignments, ...rest } = requestData;
+  const { delegate_ids, delegate_assignments, chain_delegations, ...rest } = requestData;
   const insertPayload = {
     ...rest,
     ...(delegate_ids?.length ? { delegate_ids } : {}),
     ...(delegate_assignments?.length ? { delegate_assignments } : {}),
+    ...(chain_delegations?.length ? { chain_delegations } : {}),
   };
 
   const { data, error } = await supabase
@@ -234,7 +236,7 @@ export async function createLeaveRequest(
     .single();
 
   if (error) throw error;
-  return { delegate_ids: [], delegate_assignments: [], ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], ...data } as LeaveRequest;
 }
 
 export async function updateLeaveRequest(
@@ -348,6 +350,30 @@ export async function getOverlappingLeaveRequests(
   })) as unknown as LeaveRequest[];
 }
 
+// === Active Delegate Duties ===
+
+export async function getActiveDelegateDuties(
+  employeeId: string,
+  startDate: string,
+  endDate: string,
+): Promise<LeaveRequest[]> {
+  const { data, error } = await supabase
+    .from("leave_requests")
+    .select("*")
+    .eq("status", "approved")
+    .contains("delegate_ids", [employeeId])
+    .lte("start_date", endDate)
+    .gte("end_date", startDate);
+
+  if (error) throw error;
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    delegate_ids: [],
+    delegate_assignments: [],
+    chain_delegations: [],
+    ...r,
+  })) as unknown as LeaveRequest[];
+}
+
 // === Delegated Leaves ===
 
 export async function getDelegatedLeaves(
@@ -375,7 +401,8 @@ export async function getDelegatedLeaves(
     if (fallbackError) throw fallbackError;
     return (fallbackData ?? []).map((r: Record<string, unknown>) => ({
       delegate_ids: [],
-    delegate_assignments: [],
+      delegate_assignments: [],
+      chain_delegations: [],
       ...r,
     })) as unknown as LeaveRequest[];
   }
