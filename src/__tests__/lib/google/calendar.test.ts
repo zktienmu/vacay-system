@@ -59,11 +59,8 @@ describe('createLeaveEvent', () => {
     expect(insertCall.calendarId).toBe('cal-123@group.calendar.google.com')
     expect(insertCall.requestBody.summary).toBe('Alice 3 Days-Off')
     expect(insertCall.requestBody.start.date).toBe('2026-04-01')
-    // End date is exclusive (end_date + 1 day).
-    // Compute expected value the same way the source does to avoid timezone issues.
-    const { addDays, parseISO } = await import('date-fns')
-    const expectedEnd = addDays(parseISO('2026-04-03'), 1).toISOString().split('T')[0]
-    expect(insertCall.requestBody.end.date).toBe(expectedEnd)
+    // End date is exclusive (end_date + 1 day), weekdays only
+    expect(insertCall.requestBody.end.date).toBe('2026-04-04')
     expect(insertCall.requestBody.description).toBe('Vacation')
     expect(insertCall.requestBody.transparency).toBe('transparent')
   })

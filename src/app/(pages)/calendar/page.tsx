@@ -138,6 +138,7 @@ export default function CalendarPage() {
             eventDisplay="block"
             dayMaxEvents={3}
             weekends={true}
+            firstDay={1}
           />
         </div>
       )}

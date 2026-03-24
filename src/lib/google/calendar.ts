@@ -1,7 +1,7 @@
 import "server-only";
 import { calendar_v3, calendar } from "@googleapis/calendar";
 import { JWT } from "google-auth-library";
-import { addDays, parseISO } from "date-fns";
+import { addDays, parseISO, isWeekend, format } from "date-fns";
 import type { LeaveRequest, LeaveType } from "@/types";
 import { formatLeaveType } from "@/lib/slack/format";
 
@@ -62,30 +62,53 @@ export async function createLeaveEvent(
     ? `${employeeName} Remote${request.notes ? ` — ${request.notes}` : ""}`
     : `${employeeName} ${days > 1 ? `${days} Days` : "Day"}-Off`;
 
-  // Google Calendar all-day events: end date is exclusive,
-  // so we add 1 day to include the last day of leave.
-  const endDateExclusive = addDays(parseISO(request.end_date), 1)
-    .toISOString()
-    .split("T")[0];
+  // Split the leave range into weekday-only segments (skip weekends).
+  // e.g., Thu-Tue becomes [Thu-Fri, Mon-Tue] as two separate events.
+  const segments: { start: string; end: string }[] = [];
+  let segStart: Date | null = null;
+  let current = parseISO(request.start_date);
+  const endDate = parseISO(request.end_date);
+
+  while (current <= endDate) {
+    if (!isWeekend(current)) {
+      if (!segStart) segStart = current;
+    } else if (segStart) {
+      // Weekend hit — close the current segment
+      segments.push({
+        start: format(segStart, "yyyy-MM-dd"),
+        end: format(addDays(current, 0), "yyyy-MM-dd"), // exclusive: the weekend day itself
+      });
+      segStart = null;
+    }
+    current = addDays(current, 1);
+  }
+  // Close final segment
+  if (segStart) {
+    segments.push({
+      start: format(segStart, "yyyy-MM-dd"),
+      end: format(addDays(endDate, 1), "yyyy-MM-dd"), // exclusive
+    });
+  }
 
   try {
-    const response = await calendarClient.events.insert({
-      calendarId: calendarId!,
-      requestBody: {
-        summary,
-        description: request.notes || undefined,
-        start: {
-          date: request.start_date,
+    // Create one event per weekday segment
+    const eventIds: string[] = [];
+    for (const seg of segments) {
+      const response = await calendarClient.events.insert({
+        calendarId: calendarId!,
+        requestBody: {
+          summary,
+          description: request.notes || undefined,
+          start: { date: seg.start },
+          end: { date: seg.end },
+          transparency: "transparent",
         },
-        end: {
-          date: endDateExclusive,
-        },
-        transparency: "transparent",
-      },
-    });
+      });
+      if (response.data.id) eventIds.push(response.data.id);
+    }
 
-    const eventId = response.data.id ?? null;
-    return eventId;
+    // Return all event IDs joined by comma for cleanup
+    return eventIds.length > 0 ? eventIds.join(",") : null;
   } catch (error) {
     console.error("[Google Calendar] Failed to create leave event", error);
     return null;
@@ -109,13 +132,17 @@ export async function deleteLeaveEvent(eventId: string): Promise<void> {
     return;
   }
 
-  try {
-    await calendarClient.events.delete({
-      calendarId: calendarId!,
-      eventId,
-    });
-  } catch (error) {
-    console.error("[Google Calendar] Failed to delete leave event", error);
+  // eventId may be comma-separated (multiple segments for cross-weekend leave)
+  const ids = eventId.split(",").map((id) => id.trim()).filter(Boolean);
+  for (const id of ids) {
+    try {
+      await calendarClient.events.delete({
+        calendarId: calendarId!,
+        eventId: id,
+      });
+    } catch (error) {
+      console.error("[Google Calendar] Failed to delete leave event", id, error);
+    }
   }
 }
 
