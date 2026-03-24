@@ -63,9 +63,10 @@ export default function Navbar() {
     { href: "/calendar", label: t("nav.calendar") },
   ];
 
-  // Managers can see the review page; only full admins see employees/holidays/reports
   const managerLinks = [
     { href: "/admin", label: t("nav.admin") },
+    { href: "/admin/holidays", label: locale === "zh-TW" ? "假日" : "Holidays" },
+    { href: "/admin/reports", label: locale === "zh-TW" ? "報表" : "Reports" },
   ];
 
   const adminLinks = [
