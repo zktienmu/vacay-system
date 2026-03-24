@@ -2,6 +2,7 @@ import "server-only";
 import { supabase } from "@/lib/supabase/client";
 import { notifyNewRequest, notifyApproved, notifyRejected, notifyCancelled, notifyDelegate, notifyChainDelegation } from "@/lib/slack/notify";
 import { createLeaveEvent, deleteLeaveEvent } from "@/lib/google/calendar";
+import { createHandoverTask, deleteAsanaTask } from "@/lib/asana/tasks";
 import type { LeaveRequest, Employee, DelegateAssignment, ChainDelegation } from "@/types";
 import type { ResolvedDelegateAssignment } from "@/lib/slack/format";
 
@@ -188,6 +189,55 @@ export async function onLeaveRequestApproved(
     console.error("[Integrations] Chain delegation check failed", err);
   }
 
+  // Create Asana handover tasks for each delegate
+  try {
+    const asanaTaskIds: string[] = [];
+    for (const delegate of delegates) {
+      if (!delegate.asana_user_gid) continue;
+      const assignment = assignmentByDelegateId.get(delegate.id);
+      const taskGid = await createHandoverTask({
+        assigneeGid: delegate.asana_user_gid,
+        employeeName: employee.name,
+        handoverNote: assignment?.handover_note ?? null,
+        delegateName: delegate.name,
+        startDate: request.start_date,
+        endDate: request.end_date,
+      });
+      if (taskGid) asanaTaskIds.push(taskGid);
+    }
+
+    // Also create tasks for chain delegation reassigned delegates
+    const chainDelegations: ChainDelegation[] = request.chain_delegations ?? [];
+    for (const cd of chainDelegations) {
+      const reassigned = await fetchEmployee(cd.reassigned_to);
+      if (!reassigned?.asana_user_gid) continue;
+      const originalName = (await fetchEmployee(cd.original_employee_id))?.name ?? "Unknown";
+      const taskGid = await createHandoverTask({
+        assigneeGid: reassigned.asana_user_gid,
+        employeeName: originalName,
+        handoverNote: cd.handover_note,
+        delegateName: reassigned.name,
+        startDate: cd.dates[0] ?? request.start_date,
+        endDate: cd.dates[cd.dates.length - 1] ?? request.end_date,
+      });
+      if (taskGid) asanaTaskIds.push(taskGid);
+    }
+
+    // Persist Asana task IDs
+    if (asanaTaskIds.length > 0) {
+      const { error } = await supabase
+        .from("leave_requests")
+        .update({ asana_task_ids: asanaTaskIds })
+        .eq("id", request.id);
+
+      if (error) {
+        console.error("[Integrations] Failed to update asana_task_ids", request.id, error);
+      }
+    }
+  } catch (err) {
+    console.error("[Integrations] Asana task creation failed", err);
+  }
+
   // Create Google Calendar event
   const eventId = await createLeaveEvent(request, employee.name);
 
@@ -231,11 +281,16 @@ export async function onLeaveRequestRejected(
   if (request.calendar_event_id) {
     await deleteLeaveEvent(request.calendar_event_id);
   }
+
+  // Clean up Asana tasks
+  for (const taskGid of request.asana_task_ids ?? []) {
+    await deleteAsanaTask(taskGid);
+  }
 }
 
 /**
  * Called when a leave request is cancelled.
- * Cleans up the calendar event if one exists.
+ * Cleans up the calendar event and Asana tasks if any exist.
  */
 export async function onLeaveRequestCancelled(
   request: LeaveRequest,
@@ -249,5 +304,10 @@ export async function onLeaveRequestCancelled(
   // Clean up calendar event
   if (request.calendar_event_id) {
     await deleteLeaveEvent(request.calendar_event_id);
+  }
+
+  // Clean up Asana tasks
+  for (const taskGid of request.asana_task_ids ?? []) {
+    await deleteAsanaTask(taskGid);
   }
 }

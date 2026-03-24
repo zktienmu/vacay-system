@@ -50,6 +50,7 @@ export const POST = withAdmin(
         wallet_address: parsed.data.wallet_address,
         name: parsed.data.name,
         slack_user_id: parsed.data.slack_user_id ?? null,
+        asana_user_gid: parsed.data.asana_user_gid ?? null,
         start_date: parsed.data.start_date,
         role: parsed.data.role,
         department: parsed.data.department,
