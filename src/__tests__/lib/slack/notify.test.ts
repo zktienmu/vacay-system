@@ -25,6 +25,15 @@ vi.mock('@/lib/slack/format', () => ({
   buildApprovedBlocks: vi.fn().mockReturnValue([{ type: 'section', text: { type: 'mrkdwn', text: 'approved' } }]),
   buildRejectedBlocks: vi.fn().mockReturnValue([{ type: 'section', text: { type: 'mrkdwn', text: 'rejected' } }]),
   buildCancelledBlocks: vi.fn().mockReturnValue([{ type: 'section', text: { type: 'mrkdwn', text: 'cancelled' } }]),
+  formatShortDates: vi.fn().mockImplementation((dates: string[]) =>
+    dates.map((d: string) => {
+      const [, m, day] = d.split('-')
+      return `${parseInt(m)}/${parseInt(day)}`
+    }).join(', '),
+  ),
+  formatDateRange: vi.fn().mockImplementation((start: string, end: string) =>
+    start === end ? start.replace(/-/g, '/') : `${start.replace(/-/g, '/')} ~ ${end.replace(/-/g, '/')}`,
+  ),
 }))
 
 import {
@@ -169,7 +178,7 @@ describe('notifyDelegate', () => {
     vi.clearAllMocks()
   })
 
-  it('sends DM to delegate with leave info', async () => {
+  it('sends DM to delegate with leave info (legacy fallback)', async () => {
     const request = mockLeaveRequest({
       start_date: '2026-04-01',
       end_date: '2026-04-03',
@@ -192,8 +201,53 @@ describe('notifyDelegate', () => {
     const callArgs = mockPostMessage.mock.calls[0][0]
     const blockText = callArgs.blocks[0].text.text
     expect(blockText).toContain('Alice')
-    expect(blockText).toContain('2026-04-01 ~ 2026-04-03')
+    expect(blockText).toContain('2026/04/01 ~ 2026/04/03')
     expect(blockText).toContain('交接事項')
+  })
+
+  it('sends DM with per-delegate assignment details when provided', async () => {
+    const request = mockLeaveRequest({
+      start_date: '2026-03-03',
+      end_date: '2026-03-05',
+      days: 3,
+    })
+    const employee = mockEmployee({ name: 'Alice' })
+    const delegate = mockEmployee({ id: 'del-1', slack_user_id: 'U-delegate' })
+    const assignment = {
+      dates: ['2026-03-03', '2026-03-04'],
+      handover_note: '處理客戶 X 的 ticket',
+    }
+
+    await notifyDelegate(request, employee, delegate, assignment)
+
+    expect(mockPostMessage).toHaveBeenCalledTimes(1)
+    const callArgs = mockPostMessage.mock.calls[0][0]
+    const blockText = callArgs.blocks[0].text.text
+    expect(blockText).toContain('Alice 休假代理通知')
+    expect(blockText).toContain('你的代理日期：3/3, 3/4')
+    expect(blockText).toContain('交接事項：處理客戶 X 的 ticket')
+    expect(blockText).toContain('如有問題請聯繫 Alice')
+  })
+
+  it('omits handover note in assignment DM when null', async () => {
+    const request = mockLeaveRequest({
+      start_date: '2026-03-03',
+      end_date: '2026-03-05',
+      days: 3,
+    })
+    const employee = mockEmployee({ name: 'Bob' })
+    const delegate = mockEmployee({ id: 'del-1', slack_user_id: 'U-delegate' })
+    const assignment = {
+      dates: ['2026-03-05'],
+      handover_note: null,
+    }
+
+    await notifyDelegate(request, employee, delegate, assignment)
+
+    const callArgs = mockPostMessage.mock.calls[0][0]
+    const blockText = callArgs.blocks[0].text.text
+    expect(blockText).toContain('你的代理日期：3/5')
+    expect(blockText).not.toContain('交接事項')
   })
 
   it('skips if delegate has no slack_user_id', async () => {
@@ -206,7 +260,7 @@ describe('notifyDelegate', () => {
     expect(mockPostMessage).not.toHaveBeenCalled()
   })
 
-  it('does not include handover text when handover_url is null', async () => {
+  it('does not include handover text when handover_url is null (legacy fallback)', async () => {
     const request = mockLeaveRequest({ handover_url: null })
     const employee = mockEmployee({ name: 'Bob' })
     const delegate = mockEmployee({ id: 'del-1', slack_user_id: 'U-delegate' })

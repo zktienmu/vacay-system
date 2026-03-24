@@ -2,7 +2,8 @@ import "server-only";
 import { supabase } from "@/lib/supabase/client";
 import { notifyNewRequest, notifyApproved, notifyRejected, notifyCancelled, notifyDelegate } from "@/lib/slack/notify";
 import { createLeaveEvent, deleteLeaveEvent } from "@/lib/google/calendar";
-import type { LeaveRequest, Employee } from "@/types";
+import type { LeaveRequest, Employee, DelegateAssignment } from "@/types";
+import type { ResolvedDelegateAssignment } from "@/lib/slack/format";
 
 /**
  * Fetch a single employee by ID from the database.
@@ -89,13 +90,41 @@ export async function onLeaveRequestApproved(
     if (delegate) delegates.push(delegate);
   }
 
-  // Send Slack notifications with delegate names
-  const delegateNames = delegates.map((d) => d.name);
-  await notifyApproved(request, employee, delegateNames);
+  // Build per-delegate assignment map for quick lookup
+  const assignments = request.delegate_assignments ?? [];
+  const assignmentByDelegateId = new Map<string, DelegateAssignment>(
+    assignments.map((a) => [a.delegate_id, a]),
+  );
 
-  // Notify each delegate via DM
+  // Build resolved assignments (with names) for the channel post
+  const resolvedAssignments: ResolvedDelegateAssignment[] = delegates
+    .map((d) => {
+      const a = assignmentByDelegateId.get(d.id);
+      if (!a || a.dates.length === 0) return null;
+      return { name: d.name, dates: a.dates, handover_note: a.handover_note };
+    })
+    .filter((a): a is ResolvedDelegateAssignment => a !== null);
+
+  // Send Slack notifications with delegate names + assignment details
+  const delegateNames = delegates.map((d) => d.name);
+  await notifyApproved(
+    request,
+    employee,
+    delegateNames,
+    resolvedAssignments.length > 0 ? resolvedAssignments : undefined,
+  );
+
+  // Notify each delegate via DM with their specific assignment
   for (const delegate of delegates) {
-    await notifyDelegate(request, employee, delegate);
+    const assignment = assignmentByDelegateId.get(delegate.id);
+    await notifyDelegate(
+      request,
+      employee,
+      delegate,
+      assignment && assignment.dates.length > 0
+        ? { dates: assignment.dates, handover_note: assignment.handover_note }
+        : undefined,
+    );
   }
 
   // Create Google Calendar event

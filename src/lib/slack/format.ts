@@ -41,6 +41,14 @@ export function formatDateRange(startDate: string, endDate: string): string {
 }
 
 /**
+ * Format an array of ISO date strings into short "M/d" format, comma-separated.
+ * e.g., ["2026-03-03", "2026-03-04"] => "3/3, 3/4"
+ */
+export function formatShortDates(dates: string[]): string {
+  return dates.map((d) => format(parseISO(d), "M/d")).join(", ");
+}
+
+/**
  * Build Block Kit blocks for a new leave request notification.
  */
 export function buildNewRequestBlocks(
@@ -93,12 +101,22 @@ export function buildNewRequestBlocks(
 }
 
 /**
+ * Resolved delegate assignment with employee name for display purposes.
+ */
+export interface ResolvedDelegateAssignment {
+  name: string;
+  dates: string[];
+  handover_note: string | null;
+}
+
+/**
  * Build Block Kit blocks for an approved leave notification.
  */
 export function buildApprovedBlocks(
   request: LeaveRequest,
   employee: Employee,
   delegateNames?: string[],
+  resolvedAssignments?: ResolvedDelegateAssignment[],
 ): (KnownBlock | Block)[] {
   const typeLabel = formatLeaveType(request.leave_type);
   const dateRange = formatDateRange(request.start_date, request.end_date);
@@ -107,7 +125,15 @@ export function buildApprovedBlocks(
     `📅 日期：${dateRange}（${request.days} 天）`,
   ];
 
-  if (delegateNames && delegateNames.length > 0) {
+  // Use per-delegate assignment details if available; fall back to simple name list
+  if (resolvedAssignments && resolvedAssignments.length > 0) {
+    const lines = resolvedAssignments.map((a) => {
+      const shortDates = formatShortDates(a.dates);
+      const note = a.handover_note ? `：${escapeSlackMrkdwn(a.handover_note)}` : "";
+      return `• ${a.name} (${shortDates})${note}`;
+    });
+    details.push(`\n代理安排：\n${lines.join("\n")}`);
+  } else if (delegateNames && delegateNames.length > 0) {
     details.push(`👤 代理人：${delegateNames.join("、")}`);
   }
 

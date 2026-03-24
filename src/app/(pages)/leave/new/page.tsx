@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  differenceInBusinessDays,
   isWeekend,
   parseISO,
   format,
@@ -16,7 +15,7 @@ import { useSession } from "@/hooks/useSession";
 import { getLeaveTypeEmoji } from "@/components/LeaveTypeIcon";
 import { useTranslation } from "@/lib/i18n/context";
 import { useQuery } from "@tanstack/react-query";
-import type { LeaveType, ApiResponse } from "@/types";
+import type { LeaveType, ApiResponse, DelegateAssignment } from "@/types";
 
 const LEAVE_TYPES: LeaveType[] = [
   "annual",
@@ -26,6 +25,10 @@ const LEAVE_TYPES: LeaveType[] = [
   "unpaid",
   "remote",
 ];
+
+/** Day-of-week abbreviations for column headers */
+const DAY_LABELS_ZH = ["日", "一", "二", "三", "四", "五", "六"];
+const DAY_LABELS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function countWorkingDays(start: string, end: string): number {
   if (!start || !end) return 0;
@@ -44,11 +47,29 @@ function countWorkingDays(start: string, end: string): number {
   return count;
 }
 
+/** Get all working day date strings in a range (excludes weekends) */
+function getWorkingDates(start: string, end: string): string[] {
+  if (!start || !end) return [];
+  const startDate = parseISO(start);
+  const endDate = parseISO(end);
+  if (endDate < startDate) return [];
+
+  const dates: string[] = [];
+  let current = startDate;
+  while (current <= endDate) {
+    if (!isWeekend(current)) {
+      dates.push(format(current, "yyyy-MM-dd"));
+    }
+    current = addDays(current, 1);
+  }
+  return dates;
+}
+
 export default function NewLeavePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { session } = useSession();
-  const { balances, isLoading: balancesLoading } = useLeaveBalance();
+  const { balances } = useLeaveBalance();
   const { slackUsers, isLoading: slackUsersLoading } = useSlackUsers();
   const { data: employeeList = [], isLoading: employeesLoading } = useQuery({
     queryKey: ["employeeList"],
@@ -64,7 +85,10 @@ export default function NewLeavePage() {
   const [leaveType, setLeaveType] = useState<LeaveType>("annual");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [delegateIds, setDelegateIds] = useState<string[]>([]);
+  // Matrix state: { delegateId -> Set<dateString> }
+  const [delegateMatrix, setDelegateMatrix] = useState<Record<string, Set<string>>>({});
+  // Per-delegate handover notes
+  const [delegateNotes, setDelegateNotes] = useState<Record<string, string>>({});
   const [handoverUrl, setHandoverUrl] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -72,6 +96,11 @@ export default function NewLeavePage() {
 
   const workingDays = useMemo(
     () => countWorkingDays(startDate, endDate),
+    [startDate, endDate]
+  );
+
+  const workingDates = useMemo(
+    () => getWorkingDates(startDate, endDate),
     [startDate, endDate]
   );
 
@@ -102,9 +131,124 @@ export default function NewLeavePage() {
   }, [slackCandidates, employeeList, session?.employee_id]);
   const delegatesLoading = slackUsersLoading && employeesLoading;
 
+  // Fetch conflicts when both dates are set
+  const { data: conflicts = {} } = useQuery<Record<string, string[]>>({
+    queryKey: ["leaveConflicts", startDate, endDate],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/leave/conflicts?start_date=${startDate}&end_date=${endDate}`
+      );
+      const json: ApiResponse<Record<string, string[]>> = await res.json();
+      if (!json.success || !json.data) return {};
+      return json.data;
+    },
+    enabled: !!startDate && !!endDate && workingDays > 0,
+  });
+
   const leaveTypeLabel = (type: LeaveType) => t(`leave.types.${type}` as `leave.types.${LeaveType}`);
 
   const handoverRequired = workingDays >= 3;
+
+  // Derive selected delegate IDs from the matrix
+  const selectedDelegateIds = useMemo(() => {
+    return Object.entries(delegateMatrix)
+      .filter(([, dates]) => dates.size > 0)
+      .map(([id]) => id);
+  }, [delegateMatrix]);
+
+  // Check if a delegate is on leave for a specific date
+  const isOnLeave = useCallback(
+    (delegateId: string, date: string): boolean => {
+      return conflicts[delegateId]?.includes(date) ?? false;
+    },
+    [conflicts]
+  );
+
+  // Check if every working date has at least one delegate assigned
+  const allDatesCovered = useMemo(() => {
+    if (workingDates.length === 0) return false;
+    return workingDates.every((date) =>
+      Object.values(delegateMatrix).some((dates) => dates.has(date))
+    );
+  }, [workingDates, delegateMatrix]);
+
+  // Toggle a cell in the matrix
+  const toggleMatrixCell = useCallback(
+    (delegateId: string, date: string) => {
+      setDelegateMatrix((prev) => {
+        const current = new Set(prev[delegateId] ?? []);
+        if (current.has(date)) {
+          current.delete(date);
+        } else {
+          current.add(date);
+        }
+        return { ...prev, [delegateId]: current };
+      });
+    },
+    []
+  );
+
+  // Toggle all dates for a single-day delegate (checkbox list mode)
+  const toggleDelegate = useCallback(
+    (delegateId: string) => {
+      if (workingDates.length === 0) return;
+      setDelegateMatrix((prev) => {
+        const current = new Set(prev[delegateId] ?? []);
+        if (current.size > 0) {
+          // Deselect
+          return { ...prev, [delegateId]: new Set() };
+        } else {
+          // Select the single working date (filtered by availability)
+          const available = workingDates.filter(
+            (d) => !isOnLeave(delegateId, d)
+          );
+          return { ...prev, [delegateId]: new Set(available) };
+        }
+      });
+    },
+    [workingDates, isOnLeave]
+  );
+
+  // Build delegate_assignments from the matrix state
+  const buildDelegateAssignments = useCallback((): DelegateAssignment[] => {
+    const assignments: DelegateAssignment[] = [];
+    for (const [delegateId, dates] of Object.entries(delegateMatrix)) {
+      if (dates.size === 0) continue;
+      assignments.push({
+        delegate_id: delegateId,
+        dates: Array.from(dates).sort(),
+        handover_note: delegateNotes[delegateId]?.trim() ?? "",
+      });
+    }
+    return assignments;
+  }, [delegateMatrix, delegateNotes]);
+
+  // Format date for column headers: MM/dd (一)
+  const formatColumnHeader = useCallback(
+    (dateStr: string) => {
+      const date = parseISO(dateStr);
+      const dayLabels = locale === "zh-TW" ? DAY_LABELS_ZH : DAY_LABELS_EN;
+      const dayLabel = dayLabels[date.getDay()];
+      return `${format(date, "MM/dd")} (${dayLabel})`;
+    },
+    [locale]
+  );
+
+  // Check if any delegate has conflicting dates (for display label)
+  const hasAnyConflict = useCallback(
+    (delegateId: string): boolean => {
+      return workingDates.some((d) => isOnLeave(delegateId, d));
+    },
+    [workingDates, isOnLeave]
+  );
+
+  // Are all working dates conflicted for a delegate?
+  const isFullyOnLeave = useCallback(
+    (delegateId: string): boolean => {
+      return workingDates.length > 0 && workingDates.every((d) => isOnLeave(delegateId, d));
+    },
+    [workingDates, isOnLeave]
+  );
 
   const validationErrors = useMemo(() => {
     const errors: string[] = [];
@@ -131,19 +275,39 @@ export default function NewLeavePage() {
           : "Handover document URL is required for leaves of 3+ working days"
       );
     }
-    if (delegateIds.length === 0) {
+    if (selectedDelegateIds.length === 0) {
       errors.push(
         locale === "zh-TW"
           ? "請選擇至少一位代理人"
           : "At least one delegate is required"
       );
     }
+    if (workingDays >= 2 && selectedDelegateIds.length > 0 && !allDatesCovered) {
+      errors.push(
+        locale === "zh-TW"
+          ? "每個工作日都需要至少一位代理人"
+          : "Every working day must have at least one delegate assigned"
+      );
+    }
+    // Per-delegate handover notes required when handover_url is NOT required (< 3 days) and delegates are selected
+    if (!handoverRequired && selectedDelegateIds.length > 0) {
+      const missingNotes = selectedDelegateIds.some(
+        (id) => !delegateNotes[id]?.trim()
+      );
+      if (missingNotes) {
+        errors.push(
+          locale === "zh-TW"
+            ? "請為每位代理人填寫交接事項"
+            : "Handover notes are required for each delegate"
+        );
+      }
+    }
     return errors;
-  }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale, handoverRequired, handoverUrl, delegateIds]);
+  }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale, handoverRequired, handoverUrl, selectedDelegateIds, allDatesCovered, delegateNotes]);
 
   const canSubmit =
     startDate && endDate && workingDays > 0 && validationErrors.length === 0 && !submitting &&
-    (!handoverRequired || handoverUrl.trim() !== "") && delegateIds.length > 0;
+    (!handoverRequired || handoverUrl.trim() !== "") && selectedDelegateIds.length > 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -153,6 +317,9 @@ export default function NewLeavePage() {
     setError(null);
 
     try {
+      const delegateAssignments = buildDelegateAssignments();
+      const delegateIds = [...new Set(delegateAssignments.map((a) => a.delegate_id))];
+
       const res = await fetch("/api/leave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -161,6 +328,7 @@ export default function NewLeavePage() {
           start_date: startDate,
           end_date: endDate,
           delegate_ids: delegateIds,
+          delegate_assignments: delegateAssignments,
           handover_url: handoverUrl.trim() || null,
           notes: notes.trim() || null,
         }),
@@ -186,6 +354,235 @@ export default function NewLeavePage() {
   function formatDays(n: number) {
     if (locale === "zh-TW") return `${n} ${t("common.day")}`;
     return `${n} day${n !== 1 && n !== -1 ? "s" : ""}`;
+  }
+
+  // Render delegate checkbox list (for workingDays === 1)
+  function renderSingleDayDelegates() {
+    const singleDate = workingDates[0];
+
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        {delegateCandidates.map((c) => {
+          const onLeave = singleDate ? isOnLeave(c.id, singleDate) : false;
+          const checked = (delegateMatrix[c.id]?.size ?? 0) > 0;
+          return (
+            <label
+              key={c.id}
+              className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
+                onLeave
+                  ? "cursor-not-allowed bg-gray-100 opacity-50 dark:bg-gray-700"
+                  : checked
+                    ? "cursor-pointer bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                    : "cursor-pointer text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={onLeave}
+                onChange={() => toggleDelegate(c.id)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500/20 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-700"
+              />
+              <span>{c.name}</span>
+              {onLeave && (
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  {locale === "zh-TW" ? "(休假中)" : "(On leave)"}
+                </span>
+              )}
+            </label>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Render delegate matrix table (for workingDays >= 2)
+  function renderDelegateMatrix() {
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[400px] text-sm">
+          <thead>
+            <tr>
+              <th className="sticky left-0 z-10 bg-white px-3 py-2 text-left font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                {locale === "zh-TW" ? "同事" : "Colleague"}
+              </th>
+              {workingDates.map((date) => (
+                <th
+                  key={date}
+                  className="whitespace-nowrap px-2 py-2 text-center font-medium text-gray-600 dark:text-gray-400"
+                >
+                  {formatColumnHeader(date)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            {delegateCandidates.map((c) => {
+              const fullyOnLeave = isFullyOnLeave(c.id);
+              return (
+                <tr
+                  key={c.id}
+                  className={fullyOnLeave ? "opacity-50" : ""}
+                >
+                  <td className="sticky left-0 z-10 bg-white px-3 py-2 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                    <span className="flex items-center gap-1">
+                      {c.name}
+                      {hasAnyConflict(c.id) && (
+                        <span className="text-xs text-amber-500 dark:text-amber-400">
+                          {locale === "zh-TW" ? "(部分休假)" : "(partial leave)"}
+                        </span>
+                      )}
+                      {fullyOnLeave && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {locale === "zh-TW" ? "(休假中)" : "(On leave)"}
+                        </span>
+                      )}
+                    </span>
+                  </td>
+                  {workingDates.map((date) => {
+                    const onLeave = isOnLeave(c.id, date);
+                    const checked = delegateMatrix[c.id]?.has(date) ?? false;
+                    return (
+                      <td key={date} className="px-2 py-2 text-center">
+                        {onLeave ? (
+                          <span
+                            className="inline-flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-xs text-gray-400 dark:bg-gray-700 dark:text-gray-500"
+                            title={
+                              locale === "zh-TW"
+                                ? `${c.name} 在 ${date} 休假中`
+                                : `${c.name} is on leave on ${date}`
+                            }
+                          >
+                            &times;
+                          </span>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleMatrixCell(c.id, date)}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700"
+                          />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {/* Column coverage indicator */}
+        <div className="mt-2 flex gap-1">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {locale === "zh-TW" ? "日期覆蓋：" : "Date coverage: "}
+          </span>
+          {workingDates.map((date) => {
+            const covered = Object.values(delegateMatrix).some((dates) =>
+              dates.has(date)
+            );
+            return (
+              <span
+                key={date}
+                className={`inline-block h-3 w-3 rounded-full ${
+                  covered
+                    ? "bg-green-400 dark:bg-green-500"
+                    : "bg-red-300 dark:bg-red-500"
+                }`}
+                title={`${formatColumnHeader(date)}: ${covered ? (locale === "zh-TW" ? "已覆蓋" : "covered") : (locale === "zh-TW" ? "未覆蓋" : "uncovered")}`}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Render per-delegate handover notes (when handover_url is NOT required)
+  function renderDelegateHandoverNotes() {
+    if (selectedDelegateIds.length === 0) return null;
+
+    return (
+      <div className="mt-4 space-y-3">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          {locale === "zh-TW" ? "交接事項" : "Handover Notes"}{" "}
+          <span className="text-red-500">*</span>
+        </label>
+        <div className="space-y-2 rounded-lg border border-gray-200 p-3 dark:border-gray-600">
+          {selectedDelegateIds.map((id) => {
+            const candidate = delegateCandidates.find((c) => c.id === id);
+            if (!candidate) return null;
+            return (
+              <div key={id} className="flex items-center gap-3">
+                <span className="w-24 shrink-0 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {candidate.name}:
+                </span>
+                <input
+                  type="text"
+                  value={delegateNotes[id] ?? ""}
+                  onChange={(e) =>
+                    setDelegateNotes((prev) => ({
+                      ...prev,
+                      [id]: e.target.value,
+                    }))
+                  }
+                  placeholder={
+                    locale === "zh-TW"
+                      ? "請填寫交接事項..."
+                      : "Enter handover notes..."
+                  }
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Render optional per-delegate handover notes (when handover_url IS required)
+  function renderOptionalDelegateHandoverNotes() {
+    if (selectedDelegateIds.length === 0) return null;
+
+    return (
+      <div className="mt-4 space-y-3">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          {locale === "zh-TW" ? "代理人備註" : "Delegate Notes"}{" "}
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            ({locale === "zh-TW" ? "選填" : "optional"})
+          </span>
+        </label>
+        <div className="space-y-2 rounded-lg border border-gray-200 p-3 dark:border-gray-600">
+          {selectedDelegateIds.map((id) => {
+            const candidate = delegateCandidates.find((c) => c.id === id);
+            if (!candidate) return null;
+            return (
+              <div key={id} className="flex items-center gap-3">
+                <span className="w-24 shrink-0 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {candidate.name}:
+                </span>
+                <input
+                  type="text"
+                  value={delegateNotes[id] ?? ""}
+                  onChange={(e) =>
+                    setDelegateNotes((prev) => ({
+                      ...prev,
+                      [id]: e.target.value,
+                    }))
+                  }
+                  placeholder={
+                    locale === "zh-TW"
+                      ? "選填備註..."
+                      : "Optional notes..."
+                  }
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -253,6 +650,9 @@ export default function NewLeavePage() {
                 if (endDate && e.target.value > endDate) {
                   setEndDate(e.target.value);
                 }
+                // Reset delegate matrix when dates change
+                setDelegateMatrix({});
+                setDelegateNotes({});
               }}
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
@@ -265,7 +665,12 @@ export default function NewLeavePage() {
               type="date"
               value={endDate}
               min={startDate || today}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                // Reset delegate matrix when dates change
+                setDelegateMatrix({});
+                setDelegateNotes({});
+              }}
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
           </div>
@@ -278,7 +683,7 @@ export default function NewLeavePage() {
               {t("leave.workingDays")}
             </span>
             <span className={`text-lg font-bold ${startDate && endDate && workingDays > 0 ? "text-blue-900 dark:text-blue-100" : "text-gray-400 dark:text-gray-500"}`}>
-              {startDate && endDate ? formatDays(workingDays) : "—"}
+              {startDate && endDate ? formatDays(workingDays) : "\u2014"}
             </span>
           </div>
           {remainingAfter !== null && startDate && endDate && (
@@ -303,7 +708,7 @@ export default function NewLeavePage() {
             {t("leave.delegate")} <span className="text-red-500">*</span>
           </label>
           <div className={`rounded-lg border px-3 py-2.5 ${
-            delegateIds.length === 0
+            selectedDelegateIds.length === 0
               ? "border-gray-300 dark:border-gray-600"
               : "border-blue-400 dark:border-blue-500"
           }`}>
@@ -315,47 +720,33 @@ export default function NewLeavePage() {
               <p className="text-sm text-gray-400 dark:text-gray-500">
                 {locale === "zh-TW" ? "沒有可選的代理人" : "No delegates available"}
               </p>
+            ) : workingDays === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                {locale === "zh-TW" ? "請先選擇日期" : "Please select dates first"}
+              </p>
+            ) : workingDays === 1 ? (
+              renderSingleDayDelegates()
             ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {delegateCandidates.map((c) => {
-                  const checked = delegateIds.includes(c.id);
-                  return (
-                    <label
-                      key={c.id}
-                      className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
-                        checked
-                          ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                          : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() =>
-                          setDelegateIds((prev) =>
-                            checked
-                              ? prev.filter((id) => id !== c.id)
-                              : [...prev, c.id]
-                          )
-                        }
-                        className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700"
-                      />
-                      {c.name}
-                    </label>
-                  );
-                })}
-              </div>
+              renderDelegateMatrix()
             )}
           </div>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("leave.delegateHint")}
+            {workingDays >= 2
+              ? (locale === "zh-TW"
+                  ? "每個工作日都需要至少一位代理人負責"
+                  : "Each working day must have at least one delegate assigned")
+              : t("leave.delegateHint")}
           </p>
+
+          {/* Handover notes per delegate */}
+          {workingDays > 0 && !handoverRequired && renderDelegateHandoverNotes()}
+          {workingDays > 0 && handoverRequired && renderOptionalDelegateHandoverNotes()}
         </div>
 
         {/* Handover URL (always visible, required when >= 3 working days) */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {locale === "zh-TW" ? "交接事項" : "Handover Document URL"}
+            {locale === "zh-TW" ? "交接文件連結" : "Handover Document URL"}
             {handoverRequired && (
               <span className="ml-1 text-red-500">*</span>
             )}
@@ -378,7 +769,7 @@ export default function NewLeavePage() {
                   : "A handover document URL is required for leaves of 3 or more working days")
               : (locale === "zh-TW"
                   ? "選填，可提供交接事項文件連結"
-                  : "Optional — provide a handover document URL if needed")}
+                  : "Optional \u2014 provide a handover document URL if needed")}
           </p>
         </div>
 

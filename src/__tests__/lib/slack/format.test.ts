@@ -4,6 +4,7 @@ import {
   formatLeaveType,
   formatDate,
   formatDateRange,
+  formatShortDates,
   buildNewRequestBlocks,
   buildApprovedBlocks,
   buildRejectedBlocks,
@@ -65,6 +66,24 @@ describe('formatDateRange', () => {
   it('handles cross-year range', () => {
     const result = formatDateRange('2025-12-29', '2026-01-02')
     expect(result).toBe('2025/12/29 ~ 2026/01/02')
+  })
+})
+
+describe('formatShortDates', () => {
+  it('formats single date to M/d', () => {
+    expect(formatShortDates(['2026-03-03'])).toBe('3/3')
+  })
+
+  it('formats multiple dates comma-separated', () => {
+    expect(formatShortDates(['2026-03-03', '2026-03-04'])).toBe('3/3, 3/4')
+  })
+
+  it('handles dates in different months', () => {
+    expect(formatShortDates(['2026-01-15', '2026-02-01', '2026-12-31'])).toBe('1/15, 2/1, 12/31')
+  })
+
+  it('returns empty string for empty array', () => {
+    expect(formatShortDates([])).toBe('')
   })
 })
 
@@ -136,7 +155,7 @@ describe('buildApprovedBlocks', () => {
     expect(section.text.text).toContain('病假')
   })
 
-  it('includes delegate names and handover info', () => {
+  it('includes delegate names and handover info (legacy fallback)', () => {
     const request = mockLeaveRequest({
       handover_url: 'https://docs.google.com/handover',
       notes: 'Please check email',
@@ -148,6 +167,55 @@ describe('buildApprovedBlocks', () => {
     expect(details.text.text).toContain('Bob、Carol')
     expect(details.text.text).toContain('交接事項')
     expect(details.text.text).toContain('Please check email')
+  })
+
+  it('includes per-delegate assignment details when resolvedAssignments provided', () => {
+    const request = mockLeaveRequest({
+      start_date: '2026-03-03',
+      end_date: '2026-03-05',
+      days: 3,
+    })
+    const employee = mockEmployee({ name: 'Alice' })
+    const resolvedAssignments = [
+      { name: 'Bob', dates: ['2026-03-03', '2026-03-04'], handover_note: '處理客戶 X 的 ticket' },
+      { name: 'Carol', dates: ['2026-03-05'], handover_note: 'Review PR #123' },
+    ]
+    const blocks = buildApprovedBlocks(request, employee, ['Bob', 'Carol'], resolvedAssignments)
+
+    const details = blocks[2] as { text: { text: string } }
+    expect(details.text.text).toContain('代理安排')
+    expect(details.text.text).toContain('Bob (3/3, 3/4)：處理客戶 X 的 ticket')
+    expect(details.text.text).toContain('Carol (3/5)：Review PR #123')
+    // Should NOT contain the simple delegate names line when assignments are present
+    expect(details.text.text).not.toContain('代理人')
+  })
+
+  it('falls back to delegate names when resolvedAssignments is empty', () => {
+    const request = mockLeaveRequest()
+    const employee = mockEmployee({ name: 'Alice' })
+    const blocks = buildApprovedBlocks(request, employee, ['Bob'], [])
+
+    const details = blocks[2] as { text: { text: string } }
+    expect(details.text.text).toContain('代理人：Bob')
+    expect(details.text.text).not.toContain('代理安排')
+  })
+
+  it('omits handover note in assignment line when null', () => {
+    const request = mockLeaveRequest({
+      start_date: '2026-03-03',
+      end_date: '2026-03-03',
+      days: 1,
+    })
+    const employee = mockEmployee({ name: 'Alice' })
+    const resolvedAssignments = [
+      { name: 'Bob', dates: ['2026-03-03'], handover_note: null },
+    ]
+    const blocks = buildApprovedBlocks(request, employee, ['Bob'], resolvedAssignments)
+
+    const details = blocks[2] as { text: { text: string } }
+    expect(details.text.text).toContain('Bob (3/3)')
+    // The Bob line should end after (3/3) without a colon — no handover note appended
+    expect(details.text.text).toMatch(/Bob \(3\/3\)\n|Bob \(3\/3\)$/)
   })
 })
 

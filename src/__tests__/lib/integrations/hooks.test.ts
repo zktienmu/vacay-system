@@ -178,13 +178,13 @@ describe('onLeaveRequestApproved', () => {
 
     await onLeaveRequestApproved(request)
 
-    // notifyApproved called with delegate names
+    // notifyApproved called with delegate names (no assignments => undefined)
     expect(mockNotifyApproved).toHaveBeenCalledTimes(1)
-    expect(mockNotifyApproved).toHaveBeenCalledWith(request, employee, ['Bob'])
+    expect(mockNotifyApproved).toHaveBeenCalledWith(request, employee, ['Bob'], undefined)
 
-    // notifyDelegate called for each delegate
+    // notifyDelegate called for each delegate (no assignment => undefined)
     expect(mockNotifyDelegate).toHaveBeenCalledTimes(1)
-    expect(mockNotifyDelegate).toHaveBeenCalledWith(request, employee, delegate)
+    expect(mockNotifyDelegate).toHaveBeenCalledWith(request, employee, delegate, undefined)
 
     // Calendar event created
     expect(mockCreateLeaveEvent).toHaveBeenCalledWith(request, 'Alice')
@@ -206,8 +206,49 @@ describe('onLeaveRequestApproved', () => {
 
     await onLeaveRequestApproved(request)
 
-    expect(mockNotifyApproved).toHaveBeenCalledWith(request, employee, ['Bob', 'Carol'])
+    expect(mockNotifyApproved).toHaveBeenCalledWith(request, employee, ['Bob', 'Carol'], undefined)
     expect(mockNotifyDelegate).toHaveBeenCalledTimes(2)
+  })
+
+  it('passes resolved assignments when delegate_assignments is populated', async () => {
+    const employee = mockEmployee({ id: 'emp-001', name: 'Alice' })
+    const del1 = mockEmployee({ id: 'del-1', name: 'Bob', slack_user_id: 'U-bob' })
+    const del2 = mockEmployee({ id: 'del-2', name: 'Carol', slack_user_id: 'U-carol' })
+
+    setupApprovalFlow(employee, [del1, del2])
+    mockCreateLeaveEvent.mockResolvedValueOnce(null)
+
+    const request = mockLeaveRequest({
+      employee_id: 'emp-001',
+      delegate_ids: ['del-1', 'del-2'],
+      delegate_assignments: [
+        { delegate_id: 'del-1', dates: ['2026-04-01', '2026-04-02'], handover_note: 'Handle tickets' },
+        { delegate_id: 'del-2', dates: ['2026-04-03'], handover_note: null },
+      ],
+    })
+
+    await onLeaveRequestApproved(request)
+
+    // notifyApproved receives resolved assignments with names
+    expect(mockNotifyApproved).toHaveBeenCalledWith(
+      request,
+      employee,
+      ['Bob', 'Carol'],
+      [
+        { name: 'Bob', dates: ['2026-04-01', '2026-04-02'], handover_note: 'Handle tickets' },
+        { name: 'Carol', dates: ['2026-04-03'], handover_note: null },
+      ],
+    )
+
+    // Each delegate receives their specific assignment
+    expect(mockNotifyDelegate).toHaveBeenCalledWith(
+      request, employee, del1,
+      { dates: ['2026-04-01', '2026-04-02'], handover_note: 'Handle tickets' },
+    )
+    expect(mockNotifyDelegate).toHaveBeenCalledWith(
+      request, employee, del2,
+      { dates: ['2026-04-03'], handover_note: null },
+    )
   })
 
   it('updates leave request with calendar_event_id when created', async () => {
