@@ -49,18 +49,16 @@ export default function BalanceCard({ balance }: { balance: LeaveBalance }) {
             {label}
           </h3>
         </div>
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+        <p className="flex items-baseline gap-1 text-gray-900 dark:text-gray-100">
+          <span className="text-lg font-bold">
+            {locale === "zh-TW" ? "已經使用" : "Used"}
+          </span>
+          <span className="text-5xl font-extrabold tracking-tight">
             {used_days}
           </span>
-          <span className="text-base font-medium text-gray-400 dark:text-gray-500">
-            {locale === "zh-TW" ? "天" : `day${used_days !== 1 ? "s" : ""}`}
+          <span className="text-lg font-bold">
+            {locale === "zh-TW" ? "天！" : `day${used_days !== 1 ? "s" : ""}!`}
           </span>
-        </div>
-        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-          {locale === "zh-TW"
-            ? "已經使用，無天數限制"
-            : "used, no limit"}
         </p>
       </div>
     );
