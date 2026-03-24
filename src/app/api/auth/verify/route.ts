@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
+import * as Sentry from "@sentry/nextjs";
 import { SessionData } from "@/types";
 import { sessionOptions } from "@/lib/auth/session";
 import { verifySiweMessage } from "@/lib/auth/siwe";
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Rate limit: auth endpoints
-    const limit = authRateLimiter.check(`verify:${ip}`);
+    const limit = await authRateLimiter.check(`verify:${ip}`);
     if (!limit.allowed) {
       return NextResponse.json(
         { success: false, error: "Too many requests" },
@@ -149,7 +150,8 @@ export async function POST(req: NextRequest) {
         is_manager: employee.is_manager,
       },
     });
-  } catch {
+  } catch (error) {
+    Sentry.captureException(error);
     return NextResponse.json(
       { success: false, error: "Verification failed" },
       { status: 500 },

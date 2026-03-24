@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { SessionData } from "@/types";
 import { withAdmin } from "@/lib/auth/middleware";
 import { createEmployeeSchema } from "@/lib/leave/validation";
@@ -18,7 +19,8 @@ export const GET = withAdmin(
     try {
       const employees = await getAllEmployees();
       return NextResponse.json({ success: true, data: employees });
-    } catch {
+    } catch (error) {
+      Sentry.captureException(error);
       return NextResponse.json(
         { success: false, error: "Failed to fetch employees" },
         { status: 500 },
@@ -81,6 +83,7 @@ export const POST = withAdmin(
         );
       }
 
+      Sentry.captureException(err);
       return NextResponse.json(
         { success: false, error: "Failed to create employee" },
         { status: 500 },

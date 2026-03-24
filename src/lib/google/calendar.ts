@@ -1,5 +1,6 @@
 import "server-only";
-import { google } from "googleapis";
+import { calendar_v3, calendar } from "@googleapis/calendar";
+import { JWT } from "google-auth-library";
 import { addDays, parseISO } from "date-fns";
 import type { LeaveRequest, LeaveType } from "@/types";
 import { formatLeaveType } from "@/lib/slack/format";
@@ -20,19 +21,19 @@ const calendarId = process.env.GOOGLE_CALENDAR_ID;
 
 const isConfigured = !!(serviceAccountEmail && privateKey && calendarId);
 
-function getCalendarClient() {
+function getCalendarClient(): calendar_v3.Calendar | null {
   if (!isConfigured) {
     return null;
   }
 
-  const auth = new google.auth.JWT({
+  const auth = new JWT({
     email: serviceAccountEmail,
     // Private keys from env vars typically have escaped newlines
     key: privateKey!.replace(/\\n/g, "\n"),
     scopes: ["https://www.googleapis.com/auth/calendar"],
   });
 
-  return google.calendar({ version: "v3", auth });
+  return calendar({ version: "v3", auth });
 }
 
 /**
@@ -51,8 +52,8 @@ export async function createLeaveEvent(
     return null;
   }
 
-  const calendar = getCalendarClient();
-  if (!calendar) {
+  const calendarClient = getCalendarClient();
+  if (!calendarClient) {
     return null;
   }
 
@@ -68,7 +69,7 @@ export async function createLeaveEvent(
     .split("T")[0];
 
   try {
-    const response = await calendar.events.insert({
+    const response = await calendarClient.events.insert({
       calendarId: calendarId!,
       requestBody: {
         summary,
@@ -103,13 +104,13 @@ export async function deleteLeaveEvent(eventId: string): Promise<void> {
     return;
   }
 
-  const calendar = getCalendarClient();
-  if (!calendar) {
+  const calendarClient = getCalendarClient();
+  if (!calendarClient) {
     return;
   }
 
   try {
-    await calendar.events.delete({
+    await calendarClient.events.delete({
       calendarId: calendarId!,
       eventId,
     });

@@ -487,7 +487,7 @@ export default function EmployeesPage() {
                     </span>
                   )}
                   <span className="hidden text-sm text-gray-500 sm:inline dark:text-gray-400">
-                    {t("employees.since")} {format(new Date(emp.start_date), "MMM yyyy", { locale: dateFnsLocale })}
+                    {t("employees.since")} {format(new Date(emp.start_date), "yyyy/MM")}
                   </span>
                   {/* Edit button */}
                   <button

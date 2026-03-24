@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { SessionData } from "@/types";
 import { withAuth } from "@/lib/auth/middleware";
 import { createLeaveRequestSchema } from "@/lib/leave/validation";
@@ -56,7 +57,8 @@ export const GET = withAuth(
       const requests = await getLeaveRequests(filters);
 
       return NextResponse.json({ success: true, data: requests });
-    } catch {
+    } catch (error) {
+      Sentry.captureException(error);
       return NextResponse.json(
         { success: false, error: "Failed to fetch leave requests" },
         { status: 500 },
@@ -231,7 +233,8 @@ export const POST = withAuth(
         { success: true, data: leaveRequest },
         { status: 201 },
       );
-    } catch {
+    } catch (error) {
+      Sentry.captureException(error);
       return NextResponse.json(
         { success: false, error: "Failed to create leave request" },
         { status: 500 },

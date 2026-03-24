@@ -6,7 +6,7 @@ const PUBLIC_PAGES = ["/login"];
 const SESSION_COOKIE = "dinngo_leave_session";
 const STATE_CHANGING_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
-export function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hasSession = req.cookies.has(SESSION_COOKIE);
 
@@ -34,7 +34,7 @@ export function proxy(req: NextRequest) {
   // Rate limit API routes (auth endpoints have their own stricter limiter)
   if (pathname.startsWith("/api/") && !pathname.startsWith("/api/auth/")) {
     const ip = getClientIp(req);
-    const limit = apiRateLimiter.check(`api:${ip}`);
+    const limit = await apiRateLimiter.check(`api:${ip}`);
     if (!limit.allowed) {
       const retryAfter = Math.ceil((limit.resetAt - Date.now()) / 1000);
       const res = NextResponse.json(
@@ -56,11 +56,41 @@ export function proxy(req: NextRequest) {
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()",
   );
-  // CSP temporarily relaxed for Reown AppKit compatibility — tighten in production
-  response.headers.set(
-    "Content-Security-Policy",
-    "default-src * 'unsafe-inline' 'unsafe-eval' data: blob: wss:; frame-ancestors 'none'",
-  );
+  // Content-Security-Policy — tightened while keeping Reown AppKit (Web3 wallet) working
+  // Each directive is explained:
+  //   default-src 'self'                — baseline: only same-origin
+  //   script-src 'unsafe-inline' 'unsafe-eval' — Next.js inline scripts + AppKit eval usage
+  //   style-src 'unsafe-inline'         — Tailwind + AppKit inject inline styles
+  //   img-src data: blob: https:        — wallet icons served from various CDNs
+  //   font-src data:                    — Next.js font loading + AppKit fonts
+  //   connect-src                       — API calls + WalletConnect relay/RPC/pulse + AppKit API
+  //   frame-src                         — WalletConnect verify iframe + secure mobile bridge
+  //   frame-ancestors 'none'            — prevent this app from being embedded (clickjacking)
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https://fonts.reown.com",
+    [
+      "connect-src 'self'",
+      "https://*.walletconnect.com",
+      "https://*.walletconnect.org",
+      "https://*.reown.com",
+      "https://*.web3modal.org",
+      "wss://*.walletconnect.com",
+      "wss://*.walletconnect.org",
+      "wss://*.reown.com",
+    ].join(" "),
+    [
+      "frame-src 'self'",
+      "https://*.walletconnect.com",
+      "https://*.walletconnect.org",
+      "https://*.reown.com",
+    ].join(" "),
+    "frame-ancestors 'none'",
+  ].join("; ");
+  response.headers.set("Content-Security-Policy", csp);
   response.headers.set(
     "Strict-Transport-Security",
     "max-age=31536000; includeSubDomains",

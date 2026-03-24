@@ -181,8 +181,8 @@ export default function AdminReviewPage() {
                           {employeeMap.get(req.employee_id) || req.employee?.name || t("common.unknown")}
                         </p>
                         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                          {formatDate(req.start_date, "MMM d")} -{" "}
-                          {formatDate(req.end_date, "MMM d, yyyy")}
+                          {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
+                          {formatDate(req.end_date, "yyyy/MM/dd")}
                           {" · "}
                           {formatDays(req.days)}
                         </p>
@@ -218,8 +218,8 @@ export default function AdminReviewPage() {
                             {t("review.dates")}
                           </span>
                           <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {formatDate(req.start_date, "MMMM d, yyyy")} -{" "}
-                            {formatDate(req.end_date, "MMMM d, yyyy")}
+                            {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
+                            {formatDate(req.end_date, "yyyy/MM/dd")}
                           </span>
                         </div>
 
@@ -280,7 +280,7 @@ export default function AdminReviewPage() {
                             {t("review.submitted")}
                           </span>
                           <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {formatDate(req.created_at, "MMMM d, yyyy 'at' h:mm a")}
+                            {formatDate(req.created_at, "yyyy/MM/dd HH:mm")}
                           </span>
                         </div>
                       </div>
@@ -346,8 +346,8 @@ export default function AdminReviewPage() {
                         <LeaveTypeIcon type={req.leave_type} showLabel />
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {formatDate(req.start_date, "MMM d")} -{" "}
-                        {formatDate(req.end_date, "MMM d, yyyy")}
+                        {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
+                        {formatDate(req.end_date, "yyyy/MM/dd")}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
                         <LeaveStatusBadge status={req.status} />
@@ -391,8 +391,8 @@ export default function AdminReviewPage() {
                   <div className="mt-1 flex items-center gap-2">
                     <LeaveTypeIcon type={req.leave_type} showLabel />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {formatDate(req.start_date, "MMM d")} -{" "}
-                      {formatDate(req.end_date, "MMM d")}
+                      {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
+                      {formatDate(req.end_date, "yyyy/MM/dd")}
                     </span>
                   </div>
                 </div>

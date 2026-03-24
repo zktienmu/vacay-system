@@ -1,19 +1,23 @@
 import "server-only";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// In-memory fallback (used when Upstash env vars are not configured)
+// ---------------------------------------------------------------------------
 
 interface RateLimitEntry {
   count: number;
   resetAt: number;
 }
 
-/**
- * Simple in-memory rate limiter suitable for a small team.
- * Uses a Map with TTL-based cleanup.
- *
- * NOTE: In a serverless environment (e.g. Vercel), each instance gets its own
- * memory, so this limiter is per-instance only. For production use, replace
- * with a shared store such as Redis/Upstash (@upstash/ratelimit).
- */
-class RateLimiter {
+class InMemoryRateLimiter {
   private store = new Map<string, RateLimitEntry>();
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -21,43 +25,27 @@ class RateLimiter {
     private readonly maxRequests: number,
     private readonly windowMs: number,
   ) {
-    // Periodically clean up expired entries every 60 seconds
     if (typeof setInterval !== "undefined") {
       this.cleanupInterval = setInterval(() => this.cleanup(), 60_000);
-      // Allow the Node.js process to exit even if this interval is active
       if (this.cleanupInterval && "unref" in this.cleanupInterval) {
         this.cleanupInterval.unref();
       }
     }
   }
 
-  /**
-   * Check if a request from the given key should be allowed.
-   * Returns { allowed, remaining, resetAt }.
-   */
-  check(key: string): {
-    allowed: boolean;
-    remaining: number;
-    resetAt: number;
-  } {
+  check(key: string): RateLimitResult {
     const now = Date.now();
     const entry = this.store.get(key);
 
-    // No existing entry or window has expired
     if (!entry || now >= entry.resetAt) {
       const resetAt = now + this.windowMs;
       this.store.set(key, { count: 1, resetAt });
       return { allowed: true, remaining: this.maxRequests - 1, resetAt };
     }
 
-    // Within the window
     entry.count += 1;
     if (entry.count > this.maxRequests) {
-      return {
-        allowed: false,
-        remaining: 0,
-        resetAt: entry.resetAt,
-      };
+      return { allowed: false, remaining: 0, resetAt: entry.resetAt };
     }
 
     return {
@@ -77,11 +65,87 @@ class RateLimiter {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Upstash Redis rate limiter (persistent across serverless cold starts)
+// ---------------------------------------------------------------------------
+
+class UpstashRateLimiter {
+  private limiter: Ratelimit;
+
+  constructor(maxRequests: number, windowMs: number, redis: Redis) {
+    this.limiter = new Ratelimit({
+      redis,
+      limiter: Ratelimit.fixedWindow(maxRequests, `${windowMs}ms`),
+      prefix: "vaca:rl",
+    });
+  }
+
+  async check(key: string): Promise<RateLimitResult> {
+    const result = await this.limiter.limit(key);
+    return {
+      allowed: result.success,
+      remaining: result.remaining,
+      resetAt: result.reset,
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Unified interface — async check(), works with both backends
+// ---------------------------------------------------------------------------
+
+interface RateLimiterInterface {
+  check(key: string): Promise<RateLimitResult> | RateLimitResult;
+}
+
+class AsyncInMemoryRateLimiter implements RateLimiterInterface {
+  private inner: InMemoryRateLimiter;
+
+  constructor(maxRequests: number, windowMs: number) {
+    this.inner = new InMemoryRateLimiter(maxRequests, windowMs);
+  }
+
+  check(key: string): RateLimitResult {
+    return this.inner.check(key);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Factory — picks backend based on environment variables
+// ---------------------------------------------------------------------------
+
+function hasUpstashConfig(): boolean {
+  return !!(
+    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  );
+}
+
+function createRateLimiter(
+  maxRequests: number,
+  windowMs: number,
+): RateLimiterInterface {
+  if (hasUpstashConfig()) {
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
+    return new UpstashRateLimiter(maxRequests, windowMs, redis);
+  }
+
+  return new AsyncInMemoryRateLimiter(maxRequests, windowMs);
+}
+
 // Auth endpoints: 5 requests per minute per IP
-export const authRateLimiter = new RateLimiter(5, 60_000);
+export const authRateLimiter: RateLimiterInterface = createRateLimiter(
+  5,
+  60_000,
+);
 
 // General API endpoints: 60 requests per minute per IP
-export const apiRateLimiter = new RateLimiter(60, 60_000);
+export const apiRateLimiter: RateLimiterInterface = createRateLimiter(
+  60,
+  60_000,
+);
 
 /**
  * Extract the client IP from the request.

@@ -270,7 +270,7 @@ export default function HolidaysPage() {
               {holidays.map((holiday) => (
                 <tr key={holiday.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                    {format(new Date(holiday.date), "MMM d, yyyy")}
+                    {format(new Date(holiday.date), "yyyy/MM/dd")}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
                     {holiday.name}

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     // Rate limit: auth endpoints
     const ip = getClientIp(req);
-    const limit = authRateLimiter.check(`nonce:${ip}`);
+    const limit = await authRateLimiter.check(`nonce:${ip}`);
     if (!limit.allowed) {
       return NextResponse.json(
         { success: false, error: "Too many requests" },

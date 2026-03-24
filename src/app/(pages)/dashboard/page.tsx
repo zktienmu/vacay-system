@@ -176,8 +176,8 @@ export default function DashboardPage() {
                         <LeaveTypeIcon type={leave.leave_type} showLabel />
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {formatDate(leave.start_date, "MMM d")} -{" "}
-                        {formatDate(leave.end_date, "MMM d, yyyy")}
+                        {formatDate(leave.start_date, "yyyy/MM/dd")} -{" "}
+                        {formatDate(leave.end_date, "yyyy/MM/dd")}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                         {leave.days} {locale === "zh-TW" ? t("common.day") : `day${leave.days !== 1 ? "s" : ""}`}
@@ -200,8 +200,8 @@ export default function DashboardPage() {
                     <LeaveTypeIcon type={leave.leave_type} showLabel />
                   </div>
                   <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    {formatDate(leave.start_date, "MMM d")} -{" "}
-                    {formatDate(leave.end_date, "MMM d, yyyy")} ({leave.days}{" "}
+                    {formatDate(leave.start_date, "yyyy/MM/dd")} -{" "}
+                    {formatDate(leave.end_date, "yyyy/MM/dd")} ({leave.days}{" "}
                     {locale === "zh-TW" ? t("common.day") : `day${leave.days !== 1 ? "s" : ""}`})
                   </div>
                   {leave.notes && (
@@ -265,8 +265,8 @@ export default function DashboardPage() {
                         <LeaveTypeIcon type={req.leave_type} showLabel />
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {formatDate(req.start_date, "MMM d")} -{" "}
-                        {formatDate(req.end_date, "MMM d, yyyy")}
+                        {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
+                        {formatDate(req.end_date, "yyyy/MM/dd")}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                         {req.days} {locale === "zh-TW" ? t("common.day") : `day${req.days !== 1 ? "s" : ""}`}
@@ -275,7 +275,7 @@ export default function DashboardPage() {
                         <LeaveStatusBadge status={req.status} />
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(req.created_at, "MMM d, yyyy")}
+                        {formatDate(req.created_at, "yyyy/MM/dd")}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
                         {(req.status === "pending" || req.status === "approved") && (
@@ -316,8 +316,8 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    {formatDate(req.start_date, "MMM d")} -{" "}
-                    {formatDate(req.end_date, "MMM d, yyyy")} ({req.days}{" "}
+                    {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
+                    {formatDate(req.end_date, "yyyy/MM/dd")} ({req.days}{" "}
                     {locale === "zh-TW" ? t("common.day") : `day${req.days !== 1 ? "s" : ""}`})
                   </div>
                 </div>

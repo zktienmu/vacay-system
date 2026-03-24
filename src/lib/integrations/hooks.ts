@@ -1,4 +1,5 @@
 import "server-only";
+import * as Sentry from "@sentry/nextjs";
 import { supabase } from "@/lib/supabase/client";
 import { notifyNewRequest, notifyApproved, notifyRejected, notifyCancelled, notifyDelegate } from "@/lib/slack/notify";
 import { createLeaveEvent, deleteLeaveEvent } from "@/lib/google/calendar";
@@ -17,6 +18,9 @@ async function fetchEmployee(employeeId: string): Promise<Employee | null> {
 
   if (error) {
     console.error("[Integrations] Failed to fetch employee", employeeId, error);
+    Sentry.captureException(error, {
+      extra: { employeeId, context: "fetchEmployee" },
+    });
     return null;
   }
 
@@ -35,6 +39,9 @@ async function fetchApprovers(): Promise<Employee[]> {
 
   if (error) {
     console.error("[Integrations] Failed to fetch approvers", error);
+    Sentry.captureException(error, {
+      extra: { context: "fetchApprovers" },
+    });
     return [];
   }
 
@@ -114,6 +121,9 @@ export async function onLeaveRequestApproved(
         request.id,
         error,
       );
+      Sentry.captureException(error, {
+        extra: { requestId: request.id, context: "updateCalendarEventId" },
+      });
     }
   }
 }

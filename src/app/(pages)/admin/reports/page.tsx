@@ -275,10 +275,10 @@ export default function AdminReportsPage() {
                           <LeaveTypeIcon type={req.leave_type} showLabel />
                         </td>
                         <td className="whitespace-nowrap px-6 py-3 text-sm text-gray-700 dark:text-gray-300">
-                          {format(new Date(req.start_date), "MMM d, yyyy")}
+                          {format(new Date(req.start_date), "yyyy/MM/dd")}
                         </td>
                         <td className="whitespace-nowrap px-6 py-3 text-sm text-gray-700 dark:text-gray-300">
-                          {format(new Date(req.end_date), "MMM d, yyyy")}
+                          {format(new Date(req.end_date), "yyyy/MM/dd")}
                         </td>
                         <td className="whitespace-nowrap px-6 py-3 text-sm text-gray-700 dark:text-gray-300">
                           {req.days}
@@ -322,8 +322,8 @@ export default function AdminReportsPage() {
                     <div className="mt-1 flex items-center gap-2">
                       <LeaveTypeIcon type={req.leave_type} showLabel />
                       <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {format(new Date(req.start_date), "MMM d")} -{" "}
-                        {format(new Date(req.end_date), "MMM d")} ({req.days}d)
+                        {format(new Date(req.start_date), "yyyy/MM/dd")} -{" "}
+                        {format(new Date(req.end_date), "yyyy/MM/dd")} ({req.days}d)
                       </span>
                     </div>
                   </div>

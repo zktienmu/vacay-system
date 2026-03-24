@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { mockEmployee } from '@/__tests__/helpers/mocks'
+import { clearAuthCache } from '@/lib/auth/middleware'
 
 // server-only is mocked via vitest.config.ts alias
 
@@ -54,6 +55,7 @@ describe('GET /api/employees', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    clearAuthCache()
     mockSessionData = {
       employee_id: 'admin-001',
       wallet_address: '0xadmin',
@@ -115,6 +117,7 @@ describe('POST /api/employees', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    clearAuthCache()
     mockSessionData = {
       employee_id: 'admin-001',
       wallet_address: '0xadmin',
@@ -231,6 +234,7 @@ describe('PATCH /api/employees/[id]', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    clearAuthCache()
     mockSessionData = {
       employee_id: 'admin-001',
       wallet_address: '0xadmin',

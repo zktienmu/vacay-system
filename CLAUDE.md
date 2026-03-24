@@ -43,7 +43,7 @@ Next.js 16 "proxy" convention (replaces deprecated middleware.ts). Handles:
 - Security headers (CSP, HSTS, X-Frame-Options)
 - Auth redirects (no session → /login)
 
-**Note**: CSP is temporarily permissive for Reown AppKit (Web3 wallet) compatibility.
+**Note**: CSP is tightened to allow only required origins (WalletConnect, Reown, self).
 
 ### Database Pattern
 - Uses Supabase **service_role key** which bypasses RLS — authorization enforced at API layer
@@ -100,7 +100,7 @@ TailwindCSS 4 class strategy (`dark` class on `<html>`). All UI must include `da
 
 Required: `SESSION_SECRET` (≥32 chars), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_REOWN_PROJECT_ID`, `NEXT_PUBLIC_APP_URL`
 
-Optional (graceful degradation): `SLACK_BOT_TOKEN`, `SLACK_LEAVE_CHANNEL_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_CALENDAR_ID`
+Optional (graceful degradation): `SLACK_BOT_TOKEN`, `SLACK_LEAVE_CHANNEL_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_CALENDAR_ID`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`, `SENTRY_AUTH_TOKEN`
 
 ## Working Rules
 
