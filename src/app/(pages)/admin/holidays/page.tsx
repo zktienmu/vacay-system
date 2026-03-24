@@ -44,7 +44,7 @@ export default function HolidaysPage() {
     fetchHolidays();
   }, [yearFilter]);
 
-  if (session?.role !== "admin") {
+  if (session?.role !== "admin" && !session?.is_manager) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
