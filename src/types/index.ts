@@ -43,6 +43,12 @@ export interface LeavePolicy {
   updated_at: string;
 }
 
+export interface DelegateAssignment {
+  delegate_id: string;
+  dates: string[];
+  handover_note: string;
+}
+
 export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 export interface LeaveRequest {
@@ -54,6 +60,7 @@ export interface LeaveRequest {
   days: number;
   delegate_id: string | null;
   delegate_ids: string[];
+  delegate_assignments: DelegateAssignment[];
   handover_url: string | null;
   notes: string | null;
   status: LeaveStatus;

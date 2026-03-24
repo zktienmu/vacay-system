@@ -42,11 +42,13 @@ const mockUpdateLeaveRequest = vi.fn()
 const mockGetLeavePolicies = vi.fn()
 const mockGetApprovedDaysInPeriod = vi.fn()
 const mockGetPublicHolidayDatesInRange = vi.fn()
+const mockGetEmployeesByIds = vi.fn(() => Promise.resolve([]))
 
 vi.mock('@/lib/supabase/queries', () => ({
   getLeaveRequests: (...args: unknown[]) => mockGetLeaveRequests(...args),
   createLeaveRequest: (...args: unknown[]) => mockCreateLeaveRequest(...args),
   getEmployeeById: (...args: unknown[]) => mockGetEmployeeById(...args),
+  getEmployeesByIds: (...args: unknown[]) => mockGetEmployeesByIds(...args),
   insertAuditLog: (...args: unknown[]) => mockInsertAuditLog(...args),
   getLeaveRequestById: (...args: unknown[]) => mockGetLeaveRequestById(...args),
   updateLeaveRequest: (...args: unknown[]) => mockUpdateLeaveRequest(...args),

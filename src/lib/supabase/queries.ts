@@ -72,6 +72,19 @@ export async function getAllEmployees(): Promise<Employee[]> {
   return (data ?? []) as Employee[];
 }
 
+export async function getEmployeesByIds(
+  ids: string[],
+): Promise<Employee[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from("employees")
+    .select("*")
+    .in("id", ids);
+
+  if (error) throw error;
+  return (data ?? []) as Employee[];
+}
+
 export async function createEmployee(
   employeeData: Omit<Employee, "id" | "created_at" | "updated_at">,
 ): Promise<Employee> {
@@ -177,6 +190,7 @@ export async function getLeaveRequests(filters: {
   if (error) throw error;
   return (data ?? []).map((r: Record<string, unknown>) => ({
     delegate_ids: [],
+    delegate_assignments: [],
     ...r,
   })) as unknown as LeaveRequest[];
 }
@@ -195,7 +209,7 @@ export async function getLeaveRequestById(
     throw error;
   }
 
-  return { delegate_ids: [], ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], ...data } as LeaveRequest;
 }
 
 export async function createLeaveRequest(
@@ -204,13 +218,14 @@ export async function createLeaveRequest(
     "id" | "reviewed_by" | "reviewed_at" | "calendar_event_id" | "created_at" | "updated_at"
   > & { reviewed_by?: string | null; reviewed_at?: string | null },
 ): Promise<LeaveRequest> {
-  // Only include delegate_ids in the insert when non-empty,
-  // so the DB default ('{}') is used otherwise and the insert
-  // still works before the migration adds the column.
-  const { delegate_ids, ...rest } = requestData;
-  const insertPayload = delegate_ids?.length
-    ? { ...rest, delegate_ids }
-    : rest;
+  // Only include array fields when non-empty, so DB defaults are used
+  // and inserts work before migrations add the columns.
+  const { delegate_ids, delegate_assignments, ...rest } = requestData;
+  const insertPayload = {
+    ...rest,
+    ...(delegate_ids?.length ? { delegate_ids } : {}),
+    ...(delegate_assignments?.length ? { delegate_assignments } : {}),
+  };
 
   const { data, error } = await supabase
     .from("leave_requests")
@@ -219,7 +234,7 @@ export async function createLeaveRequest(
     .single();
 
   if (error) throw error;
-  return { delegate_ids: [], ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], ...data } as LeaveRequest;
 }
 
 export async function updateLeaveRequest(
@@ -313,6 +328,26 @@ export async function deletePublicHoliday(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function getOverlappingLeaveRequests(
+  startDate: string,
+  endDate: string,
+): Promise<LeaveRequest[]> {
+  const { data, error } = await supabase
+    .from("leave_requests")
+    .select("*")
+    .in("status", ["approved", "pending"])
+    .lte("start_date", endDate)
+    .gte("end_date", startDate)
+    .order("start_date", { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    delegate_ids: [],
+    delegate_assignments: [],
+    ...r,
+  })) as unknown as LeaveRequest[];
+}
+
 // === Delegated Leaves ===
 
 export async function getDelegatedLeaves(
@@ -340,12 +375,14 @@ export async function getDelegatedLeaves(
     if (fallbackError) throw fallbackError;
     return (fallbackData ?? []).map((r: Record<string, unknown>) => ({
       delegate_ids: [],
+    delegate_assignments: [],
       ...r,
     })) as unknown as LeaveRequest[];
   }
 
   return (data ?? []).map((r: Record<string, unknown>) => ({
     delegate_ids: [],
+    delegate_assignments: [],
     ...r,
   })) as unknown as LeaveRequest[];
 }

@@ -7,6 +7,7 @@ import {
   getLeaveRequests,
   createLeaveRequest,
   getEmployeeById,
+  getEmployeesByIds,
   insertAuditLog,
 } from "@/lib/supabase/queries";
 import { getClientIp } from "@/lib/security/rate-limit";
@@ -55,7 +56,23 @@ export const GET = withAuth(
 
       const requests = await getLeaveRequests(filters);
 
-      return NextResponse.json({ success: true, data: requests });
+      // Enrich with reviewer info
+      const reviewerIds = [
+        ...new Set(
+          requests
+            .map((r) => r.reviewed_by)
+            .filter((id): id is string => id != null),
+        ),
+      ];
+      const reviewers = await getEmployeesByIds(reviewerIds);
+      const reviewerMap = new Map(reviewers.map((e) => [e.id, e]));
+
+      const enriched = requests.map((r) => ({
+        ...r,
+        reviewer: r.reviewed_by ? reviewerMap.get(r.reviewed_by) ?? null : null,
+      }));
+
+      return NextResponse.json({ success: true, data: enriched });
     } catch {
       return NextResponse.json(
         { success: false, error: "Failed to fetch leave requests" },
@@ -84,7 +101,7 @@ export const POST = withAuth(
         );
       }
 
-      const { leave_type, start_date, end_date, delegate_id, delegate_ids, handover_url, notes, for_employee_id } =
+      const { leave_type, start_date, end_date, delegate_id, delegate_ids, delegate_assignments, handover_url, notes, for_employee_id } =
         parsed.data;
 
       // Admin backfill: create leave on behalf of an employee
@@ -209,6 +226,7 @@ export const POST = withAuth(
         days,
         delegate_id: resolvedDelegateIds[0] ?? null,
         delegate_ids: resolvedDelegateIds,
+        delegate_assignments: delegate_assignments ?? [],
         handover_url: handover_url ?? null,
         notes: notes ?? null,
         status: isAdminBackfill ? "approved" : "pending",
