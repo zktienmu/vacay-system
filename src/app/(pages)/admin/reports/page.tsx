@@ -259,6 +259,7 @@ export default function AdminReportsPage() {
                       <th className="px-6 py-3">{t("reports.end")}</th>
                       <th className="px-6 py-3">{t("reports.days")}</th>
                       <th className="px-6 py-3">{t("reports.status")}</th>
+                      <th className="px-6 py-3">{locale === "zh-TW" ? "決定者" : "Decided by"}</th>
                       <th className="px-6 py-3">{t("reports.delegate")}</th>
                       <th className="px-6 py-3">{t("reports.notes")}</th>
                     </tr>
@@ -285,6 +286,11 @@ export default function AdminReportsPage() {
                         </td>
                         <td className="whitespace-nowrap px-6 py-3">
                           <LeaveStatusBadge status={req.status} />
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-3 text-sm text-gray-500 dark:text-gray-400">
+                          {req.reviewed_by
+                            ? (req.reviewer?.name ?? employeeMap.get(req.reviewed_by) ?? "-")
+                            : "-"}
                         </td>
                         <td className="whitespace-nowrap px-6 py-3 text-sm text-gray-500 dark:text-gray-400">
                           {req.delegate_id
