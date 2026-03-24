@@ -93,6 +93,19 @@ export function calculateTransitionPeriod(
   return { periodStart: "2026-01-01", periodEnd: formatDate(periodEnd) };
 }
 
+// Formal period: starts the day after transition ends, lasts one year
+export function calculateFormalPeriod(
+  startDate: string,
+): { periodStart: string; periodEnd: string } {
+  const transition = calculateTransitionPeriod(startDate);
+  const periodStart = new Date(transition.periodEnd);
+  periodStart.setDate(periodStart.getDate() + 1);
+  const periodEnd = new Date(periodStart);
+  periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+  periodEnd.setDate(periodEnd.getDate() - 1);
+  return { periodStart: formatDate(periodStart), periodEnd: formatDate(periodEnd) };
+}
+
 export async function getLeaveBalance(
   employeeId: string,
   leaveType: LeaveType,
@@ -105,39 +118,57 @@ export async function getLeaveBalance(
   const totalDays = policy?.total_days ?? 0;
   const unlimited = totalDays === -1;
 
+  const hasTransition = leaveType === "annual" && transitionAnnualDays != null;
+
+  if (hasTransition) {
+    // Use transition + formal period logic (priority: transition first)
+    const transition = calculateTransitionPeriod(employeeStartDate);
+    const formal = calculateFormalPeriod(employeeStartDate);
+    const today = formatDate(new Date());
+    const transitionExpired = today > transition.periodEnd;
+
+    // Days used in transition period (by start_date)
+    const transitionPeriodUsed = await getApprovedDaysInPeriod(
+      employeeId, leaveType, transition.periodStart, transition.periodEnd,
+    );
+
+    // Priority deduction: transition first, overflow to formal
+    const transitionUsed = Math.min(transitionPeriodUsed, transitionAnnualDays);
+    const transitionOverflow = Math.max(0, transitionPeriodUsed - transitionAnnualDays);
+
+    // Days used in formal period (by start_date) + overflow from transition
+    const formalPeriodUsed = await getApprovedDaysInPeriod(
+      employeeId, leaveType, formal.periodStart, formal.periodEnd,
+    );
+    const formalUsed = formalPeriodUsed + transitionOverflow;
+
+    return {
+      leave_type: leaveType,
+      total_days: totalDays,
+      used_days: formalUsed,
+      remaining_days: unlimited ? Infinity : totalDays - formalUsed,
+      // After transition expires, hide transition section
+      transition_days: transitionExpired ? null : transitionAnnualDays,
+      transition_used_days: transitionExpired ? null : transitionUsed,
+    };
+  }
+
+  // No transition: use standard anniversary period
   const { periodStart, periodEnd } = calculateAnniversaryPeriod(
     employeeStartDate,
   );
 
   const usedDays = await getApprovedDaysInPeriod(
-    employeeId,
-    leaveType,
-    periodStart,
-    periodEnd,
+    employeeId, leaveType, periodStart, periodEnd,
   );
-
-  // Calculate transition period balance (only for annual leave with transition days set)
-  let transitionDays: number | null = null;
-  let transitionUsedDays: number | null = null;
-
-  if (leaveType === "annual" && transitionAnnualDays != null) {
-    const transition = calculateTransitionPeriod(employeeStartDate);
-    transitionDays = transitionAnnualDays;
-    transitionUsedDays = await getApprovedDaysInPeriod(
-      employeeId,
-      leaveType,
-      transition.periodStart,
-      transition.periodEnd,
-    );
-  }
 
   return {
     leave_type: leaveType,
     total_days: totalDays,
     used_days: usedDays,
     remaining_days: unlimited ? Infinity : totalDays - usedDays,
-    transition_days: transitionDays,
-    transition_used_days: transitionUsedDays,
+    transition_days: null,
+    transition_used_days: null,
   };
 }
 

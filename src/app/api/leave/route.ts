@@ -147,13 +147,21 @@ export const POST = withAuth(
           targetEmployeeId,
           leave_type,
           employee.start_date,
+          employee.transition_annual_days,
         );
 
-        if (days > balance.remaining_days) {
+        // Total remaining includes transition + formal
+        const transitionRemaining =
+          balance.transition_days != null && balance.transition_used_days != null
+            ? balance.transition_days - balance.transition_used_days
+            : 0;
+        const totalRemaining = balance.remaining_days + transitionRemaining;
+
+        if (days > totalRemaining) {
           return NextResponse.json(
             {
               success: false,
-              error: `Insufficient ${leave_type} leave balance. Remaining: ${balance.remaining_days} days, Requested: ${days} days`,
+              error: `Insufficient ${leave_type} leave balance. Remaining: ${totalRemaining} days, Requested: ${days} days`,
             },
             { status: 400 },
           );

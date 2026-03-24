@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   calculateWorkingDays,
   calculateAnniversaryPeriod,
+  calculateTransitionPeriod,
+  calculateFormalPeriod,
   getLeaveBalance,
   calculateWorkingDaysExcludingHolidays,
 } from '@/lib/leave/balance'
@@ -297,5 +299,150 @@ describe('getLeaveBalance', () => {
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
     )
+  })
+})
+
+describe('calculateTransitionPeriod', () => {
+  it('returns 2026-01-01 to day before next anniversary (3/1 start)', () => {
+    const result = calculateTransitionPeriod('2023-03-01')
+    expect(result.periodStart).toBe('2026-01-01')
+    expect(result.periodEnd).toBe('2026-02-28')
+  })
+
+  it('returns 2026-01-01 to day before next anniversary (6/1 start)', () => {
+    const result = calculateTransitionPeriod('2024-06-01')
+    expect(result.periodStart).toBe('2026-01-01')
+    expect(result.periodEnd).toBe('2026-05-31')
+  })
+
+  it('handles 1/1 start date (anniversary on switch date)', () => {
+    const result = calculateTransitionPeriod('2024-01-01')
+    expect(result.periodStart).toBe('2026-01-01')
+    // Next anniversary after 2026-01-01 is 2027-01-01
+    expect(result.periodEnd).toBe('2026-12-31')
+  })
+})
+
+describe('calculateFormalPeriod', () => {
+  it('starts the day after transition ends (3/1 start)', () => {
+    const result = calculateFormalPeriod('2023-03-01')
+    expect(result.periodStart).toBe('2026-03-01')
+    expect(result.periodEnd).toBe('2027-02-28')
+  })
+
+  it('starts the day after transition ends (6/1 start)', () => {
+    const result = calculateFormalPeriod('2024-06-01')
+    expect(result.periodStart).toBe('2026-06-01')
+    expect(result.periodEnd).toBe('2027-05-31')
+  })
+})
+
+describe('getLeaveBalance with transition', () => {
+  const annualPolicy = {
+    id: 'p1', employee_id: 'emp-001', leave_type: 'annual' as const,
+    total_days: 27, expires_at: null,
+    created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockedGetLeavePolicies.mockResolvedValue([annualPolicy])
+    // Use fake timers to control "today"
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('scenario 1: 6 days in transition, overflow 1 to formal', async () => {
+    // 3/1 start, transition 5 days, during transition period
+    vi.setSystemTime(new Date('2026-01-20'))
+
+    // transition period query returns 6 (used more than quota)
+    // formal period query returns 0
+    mockedGetApprovedDaysInPeriod
+      .mockResolvedValueOnce(6)  // transition period
+      .mockResolvedValueOnce(0)  // formal period
+
+    const balance = await getLeaveBalance('emp-001', 'annual', '2023-03-01', 5)
+
+    expect(balance.transition_days).toBe(5)
+    expect(balance.transition_used_days).toBe(5) // capped at quota
+    expect(balance.used_days).toBe(1) // overflow
+    expect(balance.remaining_days).toBe(26) // 27 - 1
+  })
+
+  it('scenario 2: 3 days in transition, no overflow', async () => {
+    vi.setSystemTime(new Date('2026-01-20'))
+
+    mockedGetApprovedDaysInPeriod
+      .mockResolvedValueOnce(3)  // transition period
+      .mockResolvedValueOnce(0)  // formal period
+
+    const balance = await getLeaveBalance('emp-001', 'annual', '2023-03-01', 5)
+
+    expect(balance.transition_days).toBe(5)
+    expect(balance.transition_used_days).toBe(3)
+    expect(balance.used_days).toBe(0)
+    expect(balance.remaining_days).toBe(27)
+  })
+
+  it('scenario 3: cross-boundary leave, start_date in transition', async () => {
+    vi.setSystemTime(new Date('2026-02-27'))
+
+    // Leave start_date is in transition → counted in transition query
+    mockedGetApprovedDaysInPeriod
+      .mockResolvedValueOnce(3)  // transition period (full 3 days)
+      .mockResolvedValueOnce(0)  // formal period
+
+    const balance = await getLeaveBalance('emp-001', 'annual', '2023-03-01', 5)
+
+    expect(balance.transition_days).toBe(5)
+    expect(balance.transition_used_days).toBe(3)
+    expect(balance.used_days).toBe(0)
+    expect(balance.remaining_days).toBe(27)
+  })
+
+  it('scenario 4: after transition expired, transition hidden', async () => {
+    vi.setSystemTime(new Date('2026-04-01'))
+
+    mockedGetApprovedDaysInPeriod
+      .mockResolvedValueOnce(0)  // transition period (no leave taken)
+      .mockResolvedValueOnce(5)  // formal period
+
+    const balance = await getLeaveBalance('emp-001', 'annual', '2023-03-01', 5)
+
+    // Transition expired → null (hidden in UI)
+    expect(balance.transition_days).toBeNull()
+    expect(balance.transition_used_days).toBeNull()
+    expect(balance.used_days).toBe(5)
+    expect(balance.remaining_days).toBe(22)
+  })
+
+  it('non-annual leave type ignores transition even if set', async () => {
+    vi.setSystemTime(new Date('2026-01-20'))
+
+    mockedGetLeavePolicies.mockResolvedValue([{
+      ...annualPolicy, leave_type: 'sick', total_days: 10,
+    }])
+    mockedGetApprovedDaysInPeriod.mockResolvedValue(2)
+
+    const balance = await getLeaveBalance('emp-001', 'sick', '2023-03-01', 5)
+
+    expect(balance.transition_days).toBeNull()
+    expect(balance.transition_used_days).toBeNull()
+  })
+
+  it('no transition days → standard anniversary logic', async () => {
+    vi.setSystemTime(new Date('2026-01-20'))
+    mockedGetApprovedDaysInPeriod.mockResolvedValue(3)
+
+    const balance = await getLeaveBalance('emp-001', 'annual', '2023-03-01')
+
+    expect(balance.transition_days).toBeNull()
+    expect(balance.transition_used_days).toBeNull()
+    expect(balance.used_days).toBe(3)
+    expect(balance.remaining_days).toBe(24)
   })
 })
