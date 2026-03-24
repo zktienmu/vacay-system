@@ -223,7 +223,7 @@ describe('GET /api/calendar', () => {
     expect(result.data).toHaveLength(2)
   })
 
-  it('manager sees only own department leaves', async () => {
+  it('manager sees all leaves (not just own department)', async () => {
     mockSessionData = {
       employee_id: 'mgr-001',
       wallet_address: '0xmgr',
@@ -262,9 +262,8 @@ describe('GET /api/calendar', () => {
     const result = await res.json()
 
     expect(res.status).toBe(200)
-    // Manager in engineering dept should only see engineering leaves
-    expect(result.data).toHaveLength(1)
-    expect(result.data[0].title).toContain('Alice')
+    // All employees see all leaves on the calendar
+    expect(result.data).toHaveLength(2)
   })
 
   it('handles null data gracefully', async () => {

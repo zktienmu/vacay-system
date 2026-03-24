@@ -81,7 +81,19 @@ export default function DashboardPage() {
     fetchDelegated();
   }, []);
 
-  const recentRequests = requests.slice(0, 5);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const pendingRequests = requests.filter((r) => r.status === "pending");
+  const upcomingApproved = requests.filter(
+    (r) => r.status === "approved" && new Date(r.start_date) > today,
+  );
+  const pastApproved = requests.filter(
+    (r) => r.status === "approved" && new Date(r.start_date) <= today,
+  );
+  const otherRequests = requests.filter(
+    (r) => r.status === "rejected" || r.status === "cancelled",
+  );
 
   const dateFnsLocale = locale === "zh-TW" ? zhTWLocale : undefined;
 
@@ -128,6 +140,87 @@ export default function DashboardPage() {
       return `${reviewerName} 於 ${dateStr} ${statusText}`;
     }
     return `${reviewerName} ${statusText} on ${dateStr}`;
+  }
+
+  function renderRequestCards(items: typeof requests) {
+    return (
+      <div className="space-y-2">
+        {items.map((req) => {
+          const isExpanded = expandedId === req.id;
+          return (
+            <div key={req.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+              <button onClick={() => setExpandedId(isExpanded ? null : req.id)} className="hidden w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50 md:flex dark:hover:bg-gray-700/50">
+                <div className="flex items-center gap-6">
+                  <LeaveTypeIcon type={req.leave_type} showLabel />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{formatDate(req.start_date, "yyyy/MM/dd")} - {formatDate(req.end_date, "yyyy/MM/dd")}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{formatDays(req.days)}</span>
+                  <LeaveStatusBadge status={req.status} />
+                </div>
+                <div className="flex items-center gap-3">
+                  {canCancel(req) && (
+                    <span role="button" onClick={(e) => { e.stopPropagation(); handleCancel(req.id); }} className="text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                      {cancellingId === req.id ? (locale === "zh-TW" ? "取消中..." : "Cancelling...") : (locale === "zh-TW" ? "取消" : "Cancel")}
+                    </span>
+                  )}
+                  <svg className={`h-5 w-5 text-gray-400 transition-transform dark:text-gray-500 ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </div>
+              </button>
+              <button onClick={() => setExpandedId(isExpanded ? null : req.id)} className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-gray-50 md:hidden dark:hover:bg-gray-700/50">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <LeaveTypeIcon type={req.leave_type} showLabel />
+                    <LeaveStatusBadge status={req.status} />
+                  </div>
+                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">{formatDate(req.start_date, "yyyy/MM/dd")} - {formatDate(req.end_date, "yyyy/MM/dd")} ({formatDays(req.days)})</div>
+                </div>
+                <svg className={`h-5 w-5 shrink-0 text-gray-400 transition-transform dark:text-gray-500 ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
+              {isExpanded && (
+                <div className="border-t border-gray-100 bg-gray-50 px-6 py-5 dark:border-gray-700 dark:bg-gray-900/50">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{locale === "zh-TW" ? "代理人" : "Delegates"}</span>
+                      <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
+                        {(req.delegate_ids?.length ? req.delegate_ids.map((id) => employeeMap.get(id)).filter(Boolean).join(", ") : null) || (locale === "zh-TW" ? "未指派" : "None assigned")}
+                      </span>
+                    </div>
+                    {req.notes && (
+                      <div className="grid grid-cols-3 gap-2">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{locale === "zh-TW" ? "備註" : "Notes"}</span>
+                        <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">{req.notes}</span>
+                      </div>
+                    )}
+                    {req.handover_url && (
+                      <div className="grid grid-cols-3 gap-2">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{locale === "zh-TW" ? "交接事項" : "Handover"}</span>
+                        <span className="col-span-2 text-sm">
+                          <a href={req.handover_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">{req.handover_url}</a>
+                        </span>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{locale === "zh-TW" ? "審核" : "Review"}</span>
+                      <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">{getReviewText(req)}</span>
+                    </div>
+                    {canCancel(req) && (
+                      <div className="mt-3 flex justify-end border-t border-gray-200 pt-3 dark:border-gray-700">
+                        <button onClick={() => handleCancel(req.id)} disabled={cancellingId === req.id} className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50">
+                          {cancellingId === req.id ? (locale === "zh-TW" ? "取消中..." : "Cancelling...") : (locale === "zh-TW" ? "取消申請" : "Cancel Request")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
   return (
@@ -271,14 +364,9 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* Recent requests */}
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {t("dashboard.recentRequests")}
-          </h2>
-        </div>
-        {requestsLoading ? (
+      {/* Leave request sections */}
+      {requestsLoading ? (
+        <section>
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
@@ -287,7 +375,9 @@ export default function DashboardPage() {
               />
             ))}
           </div>
-        ) : recentRequests.length === 0 ? (
+        </section>
+      ) : requests.length === 0 ? (
+        <section>
           <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
             {t("dashboard.noRequests")}{" "}
             <Link
@@ -298,176 +388,54 @@ export default function DashboardPage() {
             </Link>
             .
           </div>
-        ) : (
-          <div className="space-y-2">
-            {recentRequests.map((req) => {
-              const isExpanded = expandedId === req.id;
-              return (
-                <div
-                  key={req.id}
-                  className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
-                >
-                  {/* Desktop summary row */}
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : req.id)}
-                    className="hidden w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50 md:flex dark:hover:bg-gray-700/50"
-                  >
-                    <div className="flex items-center gap-6">
-                      <LeaveTypeIcon type={req.leave_type} showLabel />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
-                        {formatDate(req.end_date, "yyyy/MM/dd")}
-                      </span>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {formatDays(req.days)}
-                      </span>
-                      <LeaveStatusBadge status={req.status} />
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {canCancel(req) && (
-                        <span
-                          role="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCancel(req.id);
-                          }}
-                          className="text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          {cancellingId === req.id
-                            ? (locale === "zh-TW" ? "取消中..." : "Cancelling...")
-                            : (locale === "zh-TW" ? "取消" : "Cancel")}
-                        </span>
-                      )}
-                      <svg
-                        className={`h-5 w-5 text-gray-400 transition-transform dark:text-gray-500 ${
-                          isExpanded ? "rotate-180" : ""
-                        }`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="2"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                        />
-                      </svg>
-                    </div>
-                  </button>
+        </section>
+      ) : (
+        <>
+          {/* Pending requests */}
+          {pendingRequests.length > 0 && (
+            <section>
+              <h2 className="mb-3 text-lg font-semibold text-yellow-600 dark:text-yellow-400">
+                {locale === "zh-TW" ? "⏳ 等待審核中" : "⏳ Pending Review"}
+                <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">({pendingRequests.length})</span>
+              </h2>
+              {renderRequestCards(pendingRequests)}
+            </section>
+          )}
 
-                  {/* Mobile summary row */}
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : req.id)}
-                    className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-gray-50 md:hidden dark:hover:bg-gray-700/50"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <LeaveTypeIcon type={req.leave_type} showLabel />
-                        <LeaveStatusBadge status={req.status} />
-                      </div>
-                      <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
-                        {formatDate(req.end_date, "yyyy/MM/dd")} ({formatDays(req.days)})
-                      </div>
-                    </div>
-                    <svg
-                      className={`h-5 w-5 shrink-0 text-gray-400 transition-transform dark:text-gray-500 ${
-                        isExpanded ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="2"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                      />
-                    </svg>
-                  </button>
+          {/* Upcoming approved */}
+          {upcomingApproved.length > 0 && (
+            <section>
+              <h2 className="mb-3 text-lg font-semibold text-green-600 dark:text-green-400">
+                {locale === "zh-TW" ? "✅ 即將到來的假期" : "✅ Upcoming Leave"}
+                <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">({upcomingApproved.length})</span>
+              </h2>
+              {renderRequestCards(upcomingApproved)}
+            </section>
+          )}
 
-                  {/* Expanded detail */}
-                  {isExpanded && (
-                    <div className="border-t border-gray-100 bg-gray-50 px-6 py-5 dark:border-gray-700 dark:bg-gray-900/50">
-                      <div className="space-y-3">
-                        {/* Delegates */}
-                        <div className="grid grid-cols-3 gap-2">
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            {locale === "zh-TW" ? "代理人" : "Delegates"}
-                          </span>
-                          <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {(req.delegate_ids?.length
-                              ? req.delegate_ids.map((id) => employeeMap.get(id)).filter(Boolean).join(", ")
-                              : null) || (locale === "zh-TW" ? "未指派" : "None assigned")}
-                          </span>
-                        </div>
+          {/* Past approved */}
+          {pastApproved.length > 0 && (
+            <section>
+              <h2 className="mb-3 text-lg font-semibold text-gray-500 dark:text-gray-400">
+                {locale === "zh-TW" ? "📋 已休假紀錄" : "📋 Past Leave"}
+                <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">({pastApproved.length})</span>
+              </h2>
+              {renderRequestCards(pastApproved)}
+            </section>
+          )}
 
-                        {/* Notes */}
-                        {req.notes && (
-                          <div className="grid grid-cols-3 gap-2">
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              {locale === "zh-TW" ? "備註" : "Notes"}
-                            </span>
-                            <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                              {req.notes}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Handover URL */}
-                        {req.handover_url && (
-                          <div className="grid grid-cols-3 gap-2">
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              {locale === "zh-TW" ? "交接事項" : "Handover"}
-                            </span>
-                            <span className="col-span-2 text-sm">
-                              <a
-                                href={req.handover_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                              >
-                                {req.handover_url}
-                              </a>
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Review info */}
-                        <div className="grid grid-cols-3 gap-2">
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            {locale === "zh-TW" ? "審核" : "Review"}
-                          </span>
-                          <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {getReviewText(req)}
-                          </span>
-                        </div>
-
-                        {/* Cancel button inside expanded area */}
-                        {canCancel(req) && (
-                          <div className="mt-3 flex justify-end border-t border-gray-200 pt-3 dark:border-gray-700">
-                            <button
-                              onClick={() => handleCancel(req.id)}
-                              disabled={cancellingId === req.id}
-                              className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
-                            >
-                              {cancellingId === req.id
-                                ? (locale === "zh-TW" ? "取消中..." : "Cancelling...")
-                                : (locale === "zh-TW" ? "取消申請" : "Cancel Request")}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+          {/* Rejected / Cancelled */}
+          {otherRequests.length > 0 && (
+            <section>
+              <h2 className="mb-3 text-lg font-semibold text-gray-400 dark:text-gray-500">
+                {locale === "zh-TW" ? "🗂️ 已駁回 / 已取消" : "🗂️ Rejected / Cancelled"}
+                <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">({otherRequests.length})</span>
+              </h2>
+              {renderRequestCards(otherRequests)}
+            </section>
+          )}
+        </>
+      )}
     </div>
   );
 }
