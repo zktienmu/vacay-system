@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
-import * as Sentry from "@sentry/nextjs";
 import { SessionData } from "@/types";
 import { sessionOptions } from "@/lib/auth/session";
 import { verifySiweMessage } from "@/lib/auth/siwe";
@@ -150,8 +149,7 @@ export async function POST(req: NextRequest) {
         is_manager: employee.is_manager,
       },
     });
-  } catch (error) {
-    Sentry.captureException(error);
+  } catch {
     return NextResponse.json(
       { success: false, error: "Verification failed" },
       { status: 500 },

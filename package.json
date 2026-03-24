@@ -20,7 +20,6 @@
     "@headlessui/react": "^2.2.9",
     "@reown/appkit": "^1.8.19",
     "@reown/appkit-adapter-wagmi": "^1.8.19",
-    "@sentry/nextjs": "^9",
     "@slack/web-api": "^7.15.0",
     "@supabase/supabase-js": "^2.99.1",
     "@tanstack/react-query": "^5.90.21",

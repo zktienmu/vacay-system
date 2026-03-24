@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 import { SessionData } from "@/types";
 import { withAuth } from "@/lib/auth/middleware";
 import {
@@ -150,8 +149,7 @@ export const PATCH = withAuth(
       }
 
       return NextResponse.json({ success: true, data: updated });
-    } catch (error) {
-      Sentry.captureException(error);
+    } catch {
       return NextResponse.json(
         { success: false, error: "Failed to update leave request" },
         { status: 500 },
