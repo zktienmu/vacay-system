@@ -47,7 +47,12 @@ export const GET = withAuth(
 
       const balances = await Promise.all(
         ALL_LEAVE_TYPES.map((type) =>
-          getLeaveBalance(targetEmployeeId, type, employee.start_date),
+          getLeaveBalance(
+            targetEmployeeId,
+            type,
+            employee.start_date,
+            employee.transition_annual_days,
+          ),
         ),
       );
 

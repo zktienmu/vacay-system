@@ -105,4 +105,6 @@ export interface LeaveBalance {
   total_days: number;
   used_days: number;
   remaining_days: number;
+  transition_days: number | null;
+  transition_used_days: number | null;
 }

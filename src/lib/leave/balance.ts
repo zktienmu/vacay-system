@@ -78,10 +78,26 @@ export async function calculateWorkingDaysExcludingHolidays(
   return calculateWorkingDays(startDate, endDate, holidayDates);
 }
 
+// Transition period: from 2026/01/01 to the day before the next employment anniversary
+export function calculateTransitionPeriod(
+  startDate: string,
+): { periodStart: string; periodEnd: string } {
+  const start = new Date(startDate);
+  let nextYear = 2026;
+  let nextAnniversary = new Date(nextYear, start.getMonth(), start.getDate());
+  while (nextAnniversary <= new Date("2026-01-01")) {
+    nextYear += 1;
+    nextAnniversary = new Date(nextYear, start.getMonth(), start.getDate());
+  }
+  const periodEnd = new Date(nextYear, start.getMonth(), start.getDate() - 1);
+  return { periodStart: "2026-01-01", periodEnd: formatDate(periodEnd) };
+}
+
 export async function getLeaveBalance(
   employeeId: string,
   leaveType: LeaveType,
   employeeStartDate: string,
+  transitionAnnualDays?: number | null,
 ): Promise<LeaveBalance> {
   const policies = await getLeavePolicies(employeeId);
   const policy = policies.find((p) => p.leave_type === leaveType);
@@ -100,11 +116,28 @@ export async function getLeaveBalance(
     periodEnd,
   );
 
+  // Calculate transition period balance (only for annual leave with transition days set)
+  let transitionDays: number | null = null;
+  let transitionUsedDays: number | null = null;
+
+  if (leaveType === "annual" && transitionAnnualDays != null) {
+    const transition = calculateTransitionPeriod(employeeStartDate);
+    transitionDays = transitionAnnualDays;
+    transitionUsedDays = await getApprovedDaysInPeriod(
+      employeeId,
+      leaveType,
+      transition.periodStart,
+      transition.periodEnd,
+    );
+  }
+
   return {
     leave_type: leaveType,
     total_days: totalDays,
     used_days: usedDays,
     remaining_days: unlimited ? Infinity : totalDays - usedDays,
+    transition_days: transitionDays,
+    transition_used_days: transitionUsedDays,
   };
 }
 
