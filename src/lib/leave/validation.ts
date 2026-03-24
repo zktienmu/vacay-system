@@ -74,7 +74,6 @@ export const createEmployeeSchema = z.object({
   wallet_address: ethereumAddress,
   name: z.string().min(1).max(200),
   slack_user_id: z.string().nullable().optional(),
-  asana_user_gid: z.string().nullable().optional(),
   start_date: isoDate,
   role: z.enum(roles).optional().default("employee"),
   department: z.enum(departments).optional().default("engineering"),

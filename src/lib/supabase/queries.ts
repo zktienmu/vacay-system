@@ -192,7 +192,6 @@ export async function getLeaveRequests(filters: {
     delegate_ids: [],
     delegate_assignments: [],
     chain_delegations: [],
-    asana_task_ids: [],
     ...r,
   })) as unknown as LeaveRequest[];
 }
@@ -211,7 +210,7 @@ export async function getLeaveRequestById(
     throw error;
   }
 
-  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], asana_task_ids: [], ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], ...data } as LeaveRequest;
 }
 
 export async function createLeaveRequest(
@@ -222,13 +221,12 @@ export async function createLeaveRequest(
 ): Promise<LeaveRequest> {
   // Only include array fields when non-empty, so DB defaults are used
   // and inserts work before migrations add the columns.
-  const { delegate_ids, delegate_assignments, chain_delegations, asana_task_ids, ...rest } = requestData;
+  const { delegate_ids, delegate_assignments, chain_delegations, ...rest } = requestData;
   const insertPayload = {
     ...rest,
     ...(delegate_ids?.length ? { delegate_ids } : {}),
     ...(delegate_assignments?.length ? { delegate_assignments } : {}),
     ...(chain_delegations?.length ? { chain_delegations } : {}),
-    ...(asana_task_ids?.length ? { asana_task_ids } : {}),
   };
 
   const { data, error } = await supabase
@@ -238,7 +236,7 @@ export async function createLeaveRequest(
     .single();
 
   if (error) throw error;
-  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], asana_task_ids: [], ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], ...data } as LeaveRequest;
 }
 
 export async function updateLeaveRequest(
@@ -372,7 +370,6 @@ export async function getActiveDelegateDuties(
     delegate_ids: [],
     delegate_assignments: [],
     chain_delegations: [],
-    asana_task_ids: [],
     ...r,
   })) as unknown as LeaveRequest[];
 }

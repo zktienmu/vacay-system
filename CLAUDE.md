@@ -92,8 +92,7 @@ TailwindCSS 4 class strategy (`dark` class on `<html>`). All UI must include `da
 | `src/lib/supabase/queries.ts` | All database operations (server-only) |
 | `src/lib/leave/validation.ts` | Zod schemas for all API inputs |
 | `src/lib/leave/balance.ts` | Working days calculation, leave balance logic |
-| `src/lib/integrations/hooks.ts` | Slack + Google Calendar + Asana triggers |
-| `src/lib/asana/tasks.ts` | Asana handover task creation/deletion |
+| `src/lib/integrations/hooks.ts` | Slack + Google Calendar triggers |
 | `src/types/index.ts` | All TypeScript interfaces |
 | `src/app/providers.tsx` | Wagmi + React Query + AppKit + I18n providers |
 
@@ -101,7 +100,7 @@ TailwindCSS 4 class strategy (`dark` class on `<html>`). All UI must include `da
 
 Required: `SESSION_SECRET` (≥32 chars), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_REOWN_PROJECT_ID`, `NEXT_PUBLIC_APP_URL`
 
-Optional (graceful degradation): `SLACK_BOT_TOKEN`, `SLACK_LEAVE_CHANNEL_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_CALENDAR_ID`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `ASANA_ACCESS_TOKEN`, `ASANA_WORKSPACE_GID`, `ASANA_PROJECT_GID`
+Optional (graceful degradation): `SLACK_BOT_TOKEN`, `SLACK_LEAVE_CHANNEL_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_CALENDAR_ID`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 ## Working Rules
 
 ### Plan Mode Default
