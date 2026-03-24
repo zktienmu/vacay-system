@@ -137,7 +137,7 @@ export default function AdminReviewPage() {
       });
       const json: ApiResponse = await res.json();
       if (json.success) {
-        alert(locale === "zh-TW" ? "已同步到 Google Calendar" : "Synced to Google Calendar");
+        alert(locale === "zh-TW" ? "已重新同步（Slack + Google Calendar）" : "Resynced (Slack + Google Calendar)");
         refetch();
       } else {
         alert(json.error || "Sync failed");
@@ -600,7 +600,7 @@ export default function AdminReviewPage() {
                             >
                               {syncingId === req.id
                                 ? (locale === "zh-TW" ? "同步中..." : "Syncing...")
-                                : (locale === "zh-TW" ? "同步到行事曆" : "Sync to Calendar")}
+                                : (locale === "zh-TW" ? "重新同步通知" : "Resync Notifications")}
                             </button>
                           )}
                           {(req.status === "approved" || req.status === "pending") && (

@@ -158,9 +158,13 @@ export const PATCH = withAuth(
 
       // Fire-and-forget: Slack + Google Calendar integrations
       if (parsed.data.status === "approved") {
-        onLeaveRequestApproved(updated).catch(() => {});
+        onLeaveRequestApproved(updated).catch((err) =>
+          console.error("[Integration] onLeaveRequestApproved failed:", err),
+        );
       } else if (parsed.data.status === "rejected") {
-        onLeaveRequestRejected(updated).catch(() => {});
+        onLeaveRequestRejected(updated).catch((err) =>
+          console.error("[Integration] onLeaveRequestRejected failed:", err),
+        );
       }
 
       return NextResponse.json({ success: true, data: updated });

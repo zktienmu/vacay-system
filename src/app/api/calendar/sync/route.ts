@@ -3,6 +3,7 @@ import { SessionData } from "@/types";
 import { withAdmin } from "@/lib/auth/middleware";
 import { getLeaveRequestById, getEmployeeById, updateLeaveRequest } from "@/lib/supabase/queries";
 import { createLeaveEvent, deleteLeaveEvent } from "@/lib/google/calendar";
+import { onLeaveRequestApproved } from "@/lib/integrations/hooks";
 
 export const POST = withAdmin(
   async (
@@ -12,7 +13,7 @@ export const POST = withAdmin(
   ) => {
     try {
       const body = await req.json();
-      const { leave_request_id } = body;
+      const { leave_request_id, slack_only } = body;
 
       if (!leave_request_id || typeof leave_request_id !== "string") {
         return NextResponse.json(
@@ -31,11 +32,18 @@ export const POST = withAdmin(
 
       if (request.status !== "approved") {
         return NextResponse.json(
-          { success: false, error: "Only approved leave requests can be synced to calendar" },
+          { success: false, error: "Only approved leave requests can be synced" },
           { status: 400 },
         );
       }
 
+      if (slack_only) {
+        // Re-trigger all Slack notifications (delegate DMs, channel post, etc.)
+        await onLeaveRequestApproved(request);
+        return NextResponse.json({ success: true, data: { synced: "slack" } });
+      }
+
+      // Full sync: Google Calendar + Slack
       const employee = await getEmployeeById(request.employee_id);
       if (!employee) {
         return NextResponse.json(
@@ -58,13 +66,17 @@ export const POST = withAdmin(
         });
       }
 
+      // Also re-trigger Slack notifications
+      await onLeaveRequestApproved(request);
+
       return NextResponse.json({
         success: true,
-        data: { calendar_event_id: eventId },
+        data: { calendar_event_id: eventId, synced: "all" },
       });
-    } catch {
+    } catch (err) {
+      console.error("[Calendar Sync] Failed:", err);
       return NextResponse.json(
-        { success: false, error: "Failed to sync calendar event" },
+        { success: false, error: "Failed to sync" },
         { status: 500 },
       );
     }
