@@ -72,14 +72,14 @@ export const PATCH = withAuth(
           );
         }
 
-        // Cannot cancel leave that has already started
+        // Cannot cancel approved leave that has already started
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        if (new Date(leaveRequest.start_date) <= today) {
+        if (leaveRequest.status === "approved" && new Date(leaveRequest.start_date) <= today) {
           return NextResponse.json(
             {
               success: false,
-              error: "Cannot cancel leave that has already started",
+              error: "Cannot cancel approved leave that has already started",
             },
             { status: 400 },
           );

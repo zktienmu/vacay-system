@@ -96,9 +96,13 @@ export default function DashboardPage() {
 
   function canCancel(req: LeaveRequest) {
     if (req.status !== "pending" && req.status !== "approved") return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return new Date(req.start_date) > today;
+    // Approved + already started → cannot cancel
+    if (req.status === "approved") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (new Date(req.start_date) <= today) return false;
+    }
+    return true;
   }
 
   function getReviewText(req: LeaveRequest) {
