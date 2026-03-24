@@ -94,22 +94,32 @@ export default function DashboardPage() {
     return `${n} day${n !== 1 ? "s" : ""}`;
   }
 
+  function canCancel(req: LeaveRequest) {
+    if (req.status !== "pending" && req.status !== "approved") return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return new Date(req.start_date) > today;
+  }
+
   function getReviewText(req: LeaveRequest) {
     if (req.status === "pending") {
       return locale === "zh-TW" ? "待審核" : "Pending review";
     }
-    const reviewerName = req.reviewed_by
-      ? employeeMap.get(req.reviewed_by) || (locale === "zh-TW" ? "未知" : "Unknown")
-      : locale === "zh-TW" ? "系統" : "System";
-    const statusText =
-      req.status === "approved"
-        ? locale === "zh-TW" ? "核准" : "approved"
-        : req.status === "rejected"
-          ? locale === "zh-TW" ? "駁回" : "rejected"
-          : locale === "zh-TW" ? "取消" : "cancelled";
-    const dateStr = req.reviewed_at
-      ? formatDate(req.reviewed_at, "yyyy/MM/dd HH:mm")
-      : "";
+    if (!req.reviewed_by || !req.reviewed_at) {
+      return locale === "zh-TW" ? "無審核紀錄" : "No review record";
+    }
+    const dateStr = formatDate(req.reviewed_at, "yyyy/MM/dd HH:mm");
+    if (req.status === "cancelled") {
+      const isSelf = req.reviewed_by === req.employee_id;
+      if (locale === "zh-TW") {
+        return isSelf ? `本人於 ${dateStr} 取消` : `${employeeMap.get(req.reviewed_by) || "未知"} 於 ${dateStr} 取消`;
+      }
+      return isSelf ? `Self-cancelled on ${dateStr}` : `${employeeMap.get(req.reviewed_by) || "Unknown"} cancelled on ${dateStr}`;
+    }
+    const reviewerName = employeeMap.get(req.reviewed_by) || (locale === "zh-TW" ? "未知" : "Unknown");
+    const statusText = req.status === "approved"
+      ? (locale === "zh-TW" ? "核准" : "approved")
+      : (locale === "zh-TW" ? "駁回" : "rejected");
     if (locale === "zh-TW") {
       return `${reviewerName} 於 ${dateStr} ${statusText}`;
     }
@@ -310,7 +320,7 @@ export default function DashboardPage() {
                       <LeaveStatusBadge status={req.status} />
                     </div>
                     <div className="flex items-center gap-3">
-                      {(req.status === "pending" || req.status === "approved") && (
+                      {canCancel(req) && (
                         <span
                           role="button"
                           onClick={(e) => {
@@ -432,7 +442,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Cancel button inside expanded area */}
-                        {(req.status === "pending" || req.status === "approved") && (
+                        {canCancel(req) && (
                           <div className="mt-3 flex justify-end border-t border-gray-200 pt-3 dark:border-gray-700">
                             <button
                               onClick={() => handleCancel(req.id)}

@@ -72,8 +72,23 @@ export const PATCH = withAuth(
           );
         }
 
+        // Cannot cancel leave that has already started
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (new Date(leaveRequest.start_date) <= today) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Cannot cancel leave that has already started",
+            },
+            { status: 400 },
+          );
+        }
+
         const updated = await updateLeaveRequest(id, {
           status: "cancelled",
+          reviewed_by: session.employee_id,
+          reviewed_at: new Date().toISOString(),
         });
 
         await insertAuditLog({
