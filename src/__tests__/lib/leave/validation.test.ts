@@ -144,6 +144,75 @@ describe('createLeaveRequestSchema', () => {
     })
     expect(result.success).toBe(true)
   })
+
+  it('accepts valid chain_delegations', () => {
+    const result = createLeaveRequestSchema.safeParse({
+      ...validRequest,
+      chain_delegations: [
+        {
+          original_leave_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          original_employee_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891',
+          reassigned_to: 'a1b2c3d4-e5f6-7890-abcd-ef1234567892',
+          dates: ['2026-04-01', '2026-04-02'],
+          handover_note: 'Handle emails',
+        },
+      ],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts chain_delegations with null handover_note', () => {
+    const result = createLeaveRequestSchema.safeParse({
+      ...validRequest,
+      chain_delegations: [
+        {
+          original_leave_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          original_employee_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891',
+          reassigned_to: 'a1b2c3d4-e5f6-7890-abcd-ef1234567892',
+          dates: ['2026-04-01'],
+          handover_note: null,
+        },
+      ],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('defaults chain_delegations to empty array when omitted', () => {
+    const result = createLeaveRequestSchema.safeParse(validRequest)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.chain_delegations).toEqual([])
+    }
+  })
+
+  it('rejects chain_delegations with invalid UUID', () => {
+    const result = createLeaveRequestSchema.safeParse({
+      ...validRequest,
+      chain_delegations: [
+        {
+          original_leave_id: 'not-a-uuid',
+          original_employee_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891',
+          reassigned_to: 'a1b2c3d4-e5f6-7890-abcd-ef1234567892',
+          dates: ['2026-04-01'],
+          handover_note: null,
+        },
+      ],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects chain_delegations with missing required fields', () => {
+    const result = createLeaveRequestSchema.safeParse({
+      ...validRequest,
+      chain_delegations: [
+        {
+          original_leave_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          // missing original_employee_id, reassigned_to, dates, handover_note
+        },
+      ],
+    })
+    expect(result.success).toBe(false)
+  })
 })
 
 describe('updateLeaveStatusSchema', () => {

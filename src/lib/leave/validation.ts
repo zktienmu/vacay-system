@@ -42,6 +42,13 @@ export const createLeaveRequestSchema = z
       dates: z.array(z.string()),
       handover_note: z.string(),
     })).optional().default([]),
+    chain_delegations: z.array(z.object({
+      original_leave_id: z.string().uuid(),
+      original_employee_id: z.string().uuid(),
+      reassigned_to: z.string().uuid(),
+      dates: z.array(z.string()),
+      handover_note: z.string().nullable(),
+    })).optional().default([]),
     handover_url: z.string().url().nullable().optional(),
     notes: z.string().max(1000).nullable().optional(),
     for_employee_id: z.string().uuid().optional(),

@@ -9,6 +9,7 @@ const {
   mockNotifyRejected,
   mockNotifyCancelled,
   mockNotifyDelegate,
+  mockNotifyChainDelegation,
   mockCreateLeaveEvent,
   mockDeleteLeaveEvent,
   mockSupabaseFrom,
@@ -18,6 +19,7 @@ const {
   mockNotifyRejected: vi.fn().mockResolvedValue(undefined),
   mockNotifyCancelled: vi.fn().mockResolvedValue(undefined),
   mockNotifyDelegate: vi.fn().mockResolvedValue(undefined),
+  mockNotifyChainDelegation: vi.fn().mockResolvedValue(undefined),
   mockCreateLeaveEvent: vi.fn().mockResolvedValue(null),
   mockDeleteLeaveEvent: vi.fn().mockResolvedValue(undefined),
   mockSupabaseFrom: vi.fn(),
@@ -29,6 +31,7 @@ vi.mock('@/lib/slack/notify', () => ({
   notifyRejected: mockNotifyRejected,
   notifyCancelled: mockNotifyCancelled,
   notifyDelegate: mockNotifyDelegate,
+  notifyChainDelegation: mockNotifyChainDelegation,
 }))
 
 vi.mock('@/lib/google/calendar', () => ({
@@ -293,6 +296,148 @@ describe('onLeaveRequestApproved', () => {
 
     expect(mockNotifyApproved).not.toHaveBeenCalled()
     expect(mockCreateLeaveEvent).not.toHaveBeenCalled()
+  })
+
+  it('sends targeted chain delegation notification when chain_delegations is populated', async () => {
+    const employee = mockEmployee({ id: 'emp-bob', name: 'Bob', slack_user_id: 'U-bob' })
+    const delegate = mockEmployee({ id: 'del-javan', name: 'Javan', slack_user_id: 'U-javan' })
+
+    // setupApprovalFlow: employee, then delegate (for regular flow),
+    // then delegate again (for chain delegation fetchEmployee(reassigned_to)),
+    // then original requester (for chain delegation fetchEmployee(original_employee_id))
+    const originalRequester = mockEmployee({ id: 'emp-alice', name: 'Alice' })
+    const employeeQueue = [employee, delegate, delegate, originalRequester]
+    let employeeFetchIndex = 0
+
+    const updateEq = vi.fn().mockResolvedValue({ error: null })
+    const updateFn = vi.fn().mockReturnValue({ eq: updateEq })
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'employees') {
+        const singleFn = vi.fn().mockImplementation(() => {
+          const emp = employeeQueue[employeeFetchIndex++] ?? null
+          return Promise.resolve({
+            data: emp,
+            error: emp ? null : { message: 'not found' },
+          })
+        })
+        const eqFn = vi.fn().mockReturnValue({ single: singleFn })
+        const orFn = vi.fn().mockResolvedValue({ data: [], error: null })
+        return { select: vi.fn().mockReturnValue({ eq: eqFn, or: orFn }) }
+      }
+      if (table === 'leave_requests') {
+        return { update: updateFn }
+      }
+      return {}
+    })
+
+    mockCreateLeaveEvent.mockResolvedValueOnce(null)
+
+    const request = mockLeaveRequest({
+      employee_id: 'emp-bob',
+      delegate_ids: ['del-javan'],
+      start_date: '2026-04-01',
+      end_date: '2026-04-03',
+      chain_delegations: [
+        {
+          original_leave_id: 'lr-alice',
+          original_employee_id: 'emp-alice',
+          reassigned_to: 'del-javan',
+          dates: ['2026-04-01', '2026-04-02'],
+          handover_note: 'Handle client emails',
+        },
+      ],
+    })
+
+    await onLeaveRequestApproved(request)
+
+    // Targeted: only Javan should be notified about Alice's chain delegation
+    expect(mockNotifyChainDelegation).toHaveBeenCalledTimes(1)
+    expect(mockNotifyChainDelegation).toHaveBeenCalledWith(
+      'U-javan',
+      'Bob',
+      'Alice',
+      expect.any(String), // formatted date range
+      'Handle client emails',
+    )
+  })
+
+  it('falls back to legacy broadcast when chain_delegations is empty', async () => {
+    const employee = mockEmployee({ id: 'emp-bob', name: 'Bob', slack_user_id: 'U-bob' })
+    const delegate = mockEmployee({ id: 'del-javan', name: 'Javan', slack_user_id: 'U-javan' })
+
+    // Build a queue: employee, delegate, then for legacy chain delegation query
+    const originalRequester = mockEmployee({ id: 'emp-alice', name: 'Alice' })
+    const employeeQueue = [employee, delegate, originalRequester]
+    let employeeFetchIndex = 0
+
+    const updateEq = vi.fn().mockResolvedValue({ error: null })
+    const updateFn = vi.fn().mockReturnValue({ eq: updateEq })
+
+    // The legacy chain delegation path queries leave_requests with contains
+    const chainSelectGte = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'lr-alice',
+          employee_id: 'emp-alice',
+          delegate_ids: ['emp-bob'],
+          delegate_assignments: [
+            { delegate_id: 'emp-bob', dates: ['2026-04-01'], handover_note: 'Legacy note' },
+          ],
+          start_date: '2026-03-30',
+          end_date: '2026-04-05',
+        },
+      ],
+      error: null,
+    })
+    const chainSelectLte = vi.fn().mockReturnValue({ gte: chainSelectGte })
+    const chainSelectContains = vi.fn().mockReturnValue({ lte: chainSelectLte })
+    const chainSelectEq = vi.fn().mockReturnValue({ contains: chainSelectContains })
+    const chainSelectFn = vi.fn().mockReturnValue({ eq: chainSelectEq })
+
+    mockSupabaseFrom.mockImplementation((table: string) => {
+      if (table === 'employees') {
+        const singleFn = vi.fn().mockImplementation(() => {
+          const emp = employeeQueue[employeeFetchIndex++] ?? null
+          return Promise.resolve({
+            data: emp,
+            error: emp ? null : { message: 'not found' },
+          })
+        })
+        const eqFn = vi.fn().mockReturnValue({ single: singleFn })
+        const orFn = vi.fn().mockResolvedValue({ data: [], error: null })
+        return { select: vi.fn().mockReturnValue({ eq: eqFn, or: orFn }) }
+      }
+      if (table === 'leave_requests') {
+        return {
+          update: updateFn,
+          select: chainSelectFn,
+        }
+      }
+      return {}
+    })
+
+    mockCreateLeaveEvent.mockResolvedValueOnce(null)
+
+    const request = mockLeaveRequest({
+      employee_id: 'emp-bob',
+      delegate_ids: ['del-javan'],
+      start_date: '2026-04-01',
+      end_date: '2026-04-03',
+      chain_delegations: [], // empty = legacy path
+    })
+
+    await onLeaveRequestApproved(request)
+
+    // Legacy broadcast: Javan should be notified about Alice's inherited duty
+    expect(mockNotifyChainDelegation).toHaveBeenCalledTimes(1)
+    expect(mockNotifyChainDelegation).toHaveBeenCalledWith(
+      'U-javan',
+      'Bob',
+      'Alice',
+      expect.any(String),
+      'Legacy note',
+    )
   })
 })
 

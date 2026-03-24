@@ -68,6 +68,7 @@ export function mockLeaveRequest(overrides: Partial<LeaveRequest> = {}): LeaveRe
     delegate_id: null,
     delegate_ids: [],
     delegate_assignments: [],
+    chain_delegations: [],
     handover_url: null,
     notes: null,
     status: 'pending',

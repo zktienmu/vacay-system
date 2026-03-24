@@ -49,6 +49,14 @@ export interface DelegateAssignment {
   handover_note: string;
 }
 
+export interface ChainDelegation {
+  original_leave_id: string;
+  original_employee_id: string;
+  reassigned_to: string;
+  dates: string[];
+  handover_note: string | null;
+}
+
 export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 export interface LeaveRequest {
@@ -61,6 +69,7 @@ export interface LeaveRequest {
   delegate_id: string | null;
   delegate_ids: string[];
   delegate_assignments: DelegateAssignment[];
+  chain_delegations: ChainDelegation[];
   handover_url: string | null;
   notes: string | null;
   status: LeaveStatus;

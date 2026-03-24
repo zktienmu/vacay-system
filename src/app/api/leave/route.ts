@@ -101,7 +101,7 @@ export const POST = withAuth(
         );
       }
 
-      const { leave_type, start_date, end_date, delegate_id, delegate_ids, delegate_assignments, handover_url, notes, for_employee_id } =
+      const { leave_type, start_date, end_date, delegate_id, delegate_ids, delegate_assignments, chain_delegations, handover_url, notes, for_employee_id } =
         parsed.data;
 
       // Admin backfill: create leave on behalf of an employee
@@ -218,6 +218,17 @@ export const POST = withAuth(
         }
       }
 
+      // Validate chain_delegations: each reassigned_to must be in delegate_ids
+      const resolvedChainDelegations = chain_delegations ?? [];
+      for (const cd of resolvedChainDelegations) {
+        if (!resolvedDelegateIds.includes(cd.reassigned_to)) {
+          return NextResponse.json(
+            { success: false, error: "Chain delegation reassigned_to must be one of the selected delegates" },
+            { status: 400 },
+          );
+        }
+      }
+
       const leaveRequest = await createLeaveRequest({
         employee_id: targetEmployeeId,
         leave_type,
@@ -227,6 +238,7 @@ export const POST = withAuth(
         delegate_id: resolvedDelegateIds[0] ?? null,
         delegate_ids: resolvedDelegateIds,
         delegate_assignments: delegate_assignments ?? [],
+        chain_delegations: resolvedChainDelegations,
         handover_url: handover_url ?? null,
         notes: notes ?? null,
         status: isAdminBackfill ? "approved" : "pending",
