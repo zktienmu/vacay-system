@@ -23,7 +23,9 @@ export async function proxy(req: NextRequest) {
     }
 
     const expectedOrigin = new URL(appUrl).origin;
-    if (origin !== expectedOrigin) {
+    // Also allow Vercel preview deployment URLs
+    const isVercelPreview = origin.endsWith(".vercel.app") && process.env.VERCEL_ENV === "preview";
+    if (origin !== expectedOrigin && !isVercelPreview) {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 },
