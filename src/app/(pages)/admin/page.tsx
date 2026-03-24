@@ -35,6 +35,7 @@ export default function AdminReviewPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reviewedExpandedId, setReviewedExpandedId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   function formatDate(date: string, fmt: string) {
     return format(new Date(date), fmt, { locale: dateFnsLocale });
@@ -123,6 +124,28 @@ export default function AdminReviewPage() {
       alert(t("admin.failedUpdate"));
     } finally {
       setActionLoading(false);
+    }
+  }
+
+  async function handleCalendarSync(id: string) {
+    setSyncingId(id);
+    try {
+      const res = await fetch("/api/calendar/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leave_request_id: id }),
+      });
+      const json: ApiResponse = await res.json();
+      if (json.success) {
+        alert(locale === "zh-TW" ? "已同步到 Google Calendar" : "Synced to Google Calendar");
+        refetch();
+      } else {
+        alert(json.error || "Sync failed");
+      }
+    } catch {
+      alert("Sync failed");
+    } finally {
+      setSyncingId(null);
     }
   }
 
@@ -567,9 +590,20 @@ export default function AdminReviewPage() {
                           </span>
                         </div>
 
-                        {/* Cancel button */}
-                        {(req.status === "approved" || req.status === "pending") && (
-                          <div className="mt-3 flex justify-end border-t border-gray-200 pt-3 dark:border-gray-700">
+                        {/* Actions */}
+                        <div className="mt-3 flex justify-end gap-2 border-t border-gray-200 pt-3 dark:border-gray-700">
+                          {req.status === "approved" && (
+                            <button
+                              onClick={() => handleCalendarSync(req.id)}
+                              disabled={syncingId === req.id}
+                              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+                            >
+                              {syncingId === req.id
+                                ? (locale === "zh-TW" ? "同步中..." : "Syncing...")
+                                : (locale === "zh-TW" ? "同步到行事曆" : "Sync to Calendar")}
+                            </button>
+                          )}
+                          {(req.status === "approved" || req.status === "pending") && (
                             <button
                               onClick={() => handleCancel(req.id)}
                               disabled={actionLoading}
@@ -577,8 +611,8 @@ export default function AdminReviewPage() {
                             >
                               {locale === "zh-TW" ? "取消" : "Cancel"}
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
