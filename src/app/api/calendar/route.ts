@@ -82,11 +82,7 @@ export async function GET(
       .lte("start_date", monthEndStr)
       .gte("end_date", monthStartStr);
 
-    // Non-admin, non-manager employees only see their own leaves
-    if (session.role !== "admin" && !session.is_manager) {
-      query = query.eq("employee_id", session.employee_id);
-    }
-
+    // All employees can see all approved leaves on the calendar
     const { data: requests, error } = await query;
 
     if (error) {
@@ -96,15 +92,7 @@ export async function GET(
       );
     }
 
-    // Manager: filter to own department only
-    let filteredRequests = requests ?? [];
-    if (session.role !== "admin" && session.is_manager) {
-      filteredRequests = filteredRequests.filter((row) => {
-        const emp = row.employees as { name: string; department: string } | { name: string; department: string }[] | null;
-        const dept = Array.isArray(emp) ? emp[0]?.department : emp?.department;
-        return dept === session.department;
-      });
-    }
+    const filteredRequests = requests ?? [];
 
     const events: CalendarEvent[] = filteredRequests.map((row) => {
       const leaveType = row.leave_type as LeaveType;
