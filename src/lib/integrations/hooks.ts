@@ -97,13 +97,13 @@ export async function onLeaveRequestApproved(
   );
 
   // Build resolved assignments (with names) for the channel post
-  const resolvedAssignments: ResolvedDelegateAssignment[] = delegates
-    .map((d) => {
-      const a = assignmentByDelegateId.get(d.id);
-      if (!a || a.dates.length === 0) return null;
-      return { name: d.name, dates: a.dates, handover_note: a.handover_note };
-    })
-    .filter((a): a is ResolvedDelegateAssignment => a !== null);
+  const resolvedAssignments: ResolvedDelegateAssignment[] = [];
+  for (const d of delegates) {
+    const a = assignmentByDelegateId.get(d.id);
+    if (a && a.dates.length > 0) {
+      resolvedAssignments.push({ name: d.name, dates: a.dates, handover_note: a.handover_note });
+    }
+  }
 
   // Send Slack notifications with delegate names + assignment details
   const delegateNames = delegates.map((d) => d.name);
