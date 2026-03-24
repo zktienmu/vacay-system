@@ -77,9 +77,14 @@ export default function NewLeavePage() {
 
   const currentBalance = balances.find((b) => b.leave_type === leaveType);
   const isUnlimited = currentBalance?.total_days === -1;
+  const hasTransition = currentBalance?.transition_days != null && currentBalance?.transition_used_days != null;
+  const transitionRemaining = hasTransition
+    ? currentBalance.transition_days! - currentBalance.transition_used_days!
+    : 0;
+  const totalRemaining = (currentBalance?.remaining_days ?? 0) + transitionRemaining;
   const remainingAfter =
     currentBalance != null && !isUnlimited
-      ? currentBalance.remaining_days - workingDays
+      ? totalRemaining - workingDays
       : null;
 
   // Use Slack users if available, otherwise fall back to employee list
@@ -114,7 +119,7 @@ export default function NewLeavePage() {
     if (remainingAfter !== null && remainingAfter < 0) {
       errors.push(
         t("leave.validationInsufficientBalance", {
-          remaining: String(currentBalance?.remaining_days ?? 0),
+          remaining: String(totalRemaining),
           type: leaveTypeLabel(leaveType),
         })
       );
@@ -215,12 +220,21 @@ export default function NewLeavePage() {
             ))}
           </select>
           {currentBalance && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("leave.balance")}:{" "}
-              {isUnlimited
-                ? (locale === "zh-TW" ? "無限制" : "Unlimited")
-                : `${currentBalance.remaining_days} / ${currentBalance.total_days} ${t("leave.daysRemaining")}`}
-            </p>
+            <div className="mt-1 space-y-0.5">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {t("leave.balance")}:{" "}
+                {isUnlimited
+                  ? (locale === "zh-TW" ? "無限制" : "Unlimited")
+                  : `${currentBalance.remaining_days} / ${currentBalance.total_days} ${t("leave.daysRemaining")}`}
+              </p>
+              {hasTransition && (
+                <p className="text-xs text-blue-600 dark:text-blue-400">
+                  {locale === "zh-TW"
+                    ? `過渡期：${transitionRemaining} / ${currentBalance.transition_days} 天`
+                    : `Transition: ${transitionRemaining} / ${currentBalance.transition_days} days`}
+                </p>
+              )}
+            </div>
           )}
         </div>
 
