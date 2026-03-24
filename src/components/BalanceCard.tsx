@@ -34,9 +34,37 @@ export default function BalanceCard({ balance }: { balance: LeaveBalance }) {
   const usedAll = hasTransition ? used_days + transition_used_days : used_days;
   const percentage = totalAll > 0 ? (usedAll / totalAll) * 100 : 0;
 
+  const isUnlimited = total_days === -1;
   const emoji = getLeaveTypeEmoji(leave_type);
   const label = t(`leave.types.${leave_type}` as `leave.types.${LeaveType}`);
   const barColor = getProgressColor(usedAll, totalAll);
+
+  // 無限制假別：大字顯示已使用天數，不顯示進度條
+  if (isUnlimited) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-xl">{emoji}</span>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            {label}
+          </h3>
+        </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+            {used_days}
+          </span>
+          <span className="text-base font-medium text-gray-400 dark:text-gray-500">
+            {locale === "zh-TW" ? "天" : `day${used_days !== 1 ? "s" : ""}`}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          {locale === "zh-TW"
+            ? "已經使用，無天數限制"
+            : "used, no limit"}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
