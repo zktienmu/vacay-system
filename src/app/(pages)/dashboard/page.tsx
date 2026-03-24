@@ -62,6 +62,7 @@ export default function DashboardPage() {
   }, [locale, refetch]);
   const [delegatedLeaves, setDelegatedLeaves] = useState<DelegatedLeave[]>([]);
   const [delegatedLoading, setDelegatedLoading] = useState(true);
+  const [delegatedExpandedId, setDelegatedExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchDelegated() {
@@ -158,9 +159,9 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   {canCancel(req) && (
-                    <span role="button" onClick={(e) => { e.stopPropagation(); handleCancel(req.id); }} className="text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                    <button onClick={(e) => { e.stopPropagation(); handleCancel(req.id); }} disabled={cancellingId === req.id} className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50">
                       {cancellingId === req.id ? (locale === "zh-TW" ? "取消中..." : "Cancelling...") : (locale === "zh-TW" ? "取消" : "Cancel")}
-                    </span>
+                    </button>
                   )}
                   <svg className={`h-5 w-5 text-gray-400 transition-transform dark:text-gray-500 ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
@@ -184,9 +185,29 @@ export default function DashboardPage() {
                   <div className="space-y-3">
                     <div className="grid grid-cols-3 gap-2">
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{locale === "zh-TW" ? "代理人" : "Delegates"}</span>
-                      <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                        {(req.delegate_ids?.length ? req.delegate_ids.map((id) => employeeMap.get(id)).filter(Boolean).join(", ") : null) || (locale === "zh-TW" ? "未指派" : "None assigned")}
-                      </span>
+                      <div className="col-span-2">
+                        {req.delegate_assignments?.length ? (
+                          <div className="space-y-2">
+                            {req.delegate_assignments.map((assignment) => (
+                              <div key={assignment.delegate_id} className="rounded-lg border border-gray-200 bg-white p-2.5 dark:border-gray-600 dark:bg-gray-800">
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  {employeeMap.get(assignment.delegate_id) || assignment.delegate_id}
+                                </p>
+                                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                  {assignment.dates.map((d) => format(new Date(d), "MM/dd", { locale: dateFnsLocale })).join(", ")}
+                                </p>
+                                {assignment.handover_note && (
+                                  <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-300">{assignment.handover_note}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-900 dark:text-gray-100">
+                            {(req.delegate_ids?.length ? req.delegate_ids.map((id) => employeeMap.get(id)).filter(Boolean).join(", ") : null) || (locale === "zh-TW" ? "未指派" : "None assigned")}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {req.notes && (
                       <div className="grid grid-cols-3 gap-2">
@@ -302,64 +323,112 @@ export default function DashboardPage() {
             {locale === "zh-TW" ? "目前沒有人委派工作給你。" : "No one has delegated work to you right now."}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-            <div className="hidden md:block">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400">
-                    <th className="px-6 py-3">{locale === "zh-TW" ? "申請人" : "Requester"}</th>
-                    <th className="px-6 py-3">{t("dashboard.type")}</th>
-                    <th className="px-6 py-3">{t("dashboard.dates")}</th>
-                    <th className="px-6 py-3">{t("dashboard.daysCol")}</th>
-                    <th className="px-6 py-3">{locale === "zh-TW" ? "備註" : "Notes"}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {delegatedLeaves.map((leave) => (
-                    <tr key={leave.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+          <div className="space-y-2">
+            {delegatedLeaves.map((leave) => {
+              const isDelegatedExpanded = delegatedExpandedId === leave.id;
+              const myAssignment = leave.delegate_assignments?.find(
+                (a) => a.delegate_id === session?.employee_id
+              );
+              return (
+                <div key={leave.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+                  {/* Desktop row */}
+                  <button
+                    onClick={() => setDelegatedExpandedId(isDelegatedExpanded ? null : leave.id)}
+                    className="hidden w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50 md:flex dark:hover:bg-gray-700/50"
+                  >
+                    <div className="flex items-center gap-6">
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                         {leave.employee?.name || t("common.unknown")}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
+                      </span>
+                      <LeaveTypeIcon type={leave.leave_type} showLabel />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {formatDate(leave.start_date, "yyyy/MM/dd")} - {formatDate(leave.end_date, "yyyy/MM/dd")}
+                      </span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{formatDays(leave.days)}</span>
+                    </div>
+                    <svg className={`h-5 w-5 text-gray-400 transition-transform dark:text-gray-500 ${isDelegatedExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                    </svg>
+                  </button>
+                  {/* Mobile row */}
+                  <button
+                    onClick={() => setDelegatedExpandedId(isDelegatedExpanded ? null : leave.id)}
+                    className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-gray-50 md:hidden dark:hover:bg-gray-700/50"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {leave.employee?.name || t("common.unknown")}
+                        </span>
                         <LeaveTypeIcon type={leave.leave_type} showLabel />
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {formatDate(leave.start_date, "yyyy/MM/dd")} -{" "}
-                        {formatDate(leave.end_date, "yyyy/MM/dd")}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {leave.days} {locale === "zh-TW" ? t("common.day") : `day${leave.days !== 1 ? "s" : ""}`}
-                      </td>
-                      <td className="max-w-xs truncate px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                        {leave.notes || "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="divide-y divide-gray-100 md:hidden dark:divide-gray-700">
-              {delegatedLeaves.map((leave) => (
-                <div key={leave.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {leave.employee?.name || t("common.unknown")}
-                    </span>
-                    <LeaveTypeIcon type={leave.leave_type} showLabel />
-                  </div>
-                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    {formatDate(leave.start_date, "yyyy/MM/dd")} -{" "}
-                    {formatDate(leave.end_date, "yyyy/MM/dd")} ({leave.days}{" "}
-                    {locale === "zh-TW" ? t("common.day") : `day${leave.days !== 1 ? "s" : ""}`})
-                  </div>
-                  {leave.notes && (
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                      {leave.notes}
-                    </p>
+                      </div>
+                      <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                        {formatDate(leave.start_date, "yyyy/MM/dd")} - {formatDate(leave.end_date, "yyyy/MM/dd")} ({formatDays(leave.days)})
+                      </div>
+                    </div>
+                    <svg className={`h-5 w-5 shrink-0 text-gray-400 transition-transform dark:text-gray-500 ${isDelegatedExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                    </svg>
+                  </button>
+                  {/* Expanded detail */}
+                  {isDelegatedExpanded && (
+                    <div className="border-t border-gray-100 bg-gray-50 px-6 py-5 dark:border-gray-700 dark:bg-gray-900/50">
+                      <div className="space-y-3">
+                        {myAssignment && (
+                          <>
+                            <div className="grid grid-cols-3 gap-2">
+                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                {locale === "zh-TW" ? "負責日期" : "My dates"}
+                              </span>
+                              <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
+                                {myAssignment.dates.map((d) => formatDate(d, "MM/dd")).join(", ")}
+                              </span>
+                            </div>
+                            {myAssignment.handover_note && (
+                              <div className="grid grid-cols-3 gap-2">
+                                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  {locale === "zh-TW" ? "交接說明" : "Handover note"}
+                                </span>
+                                <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
+                                  {myAssignment.handover_note}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {leave.handover_url && (
+                          <div className="grid grid-cols-3 gap-2">
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              {locale === "zh-TW" ? "交接文件" : "Handover doc"}
+                            </span>
+                            <span className="col-span-2 text-sm">
+                              <a href={leave.handover_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                {leave.handover_url}
+                              </a>
+                            </span>
+                          </div>
+                        )}
+                        {leave.notes && (
+                          <div className="grid grid-cols-3 gap-2">
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              {locale === "zh-TW" ? "備註" : "Notes"}
+                            </span>
+                            <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
+                              {leave.notes}
+                            </span>
+                          </div>
+                        )}
+                        {!myAssignment && !leave.handover_url && !leave.notes && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {locale === "zh-TW" ? "沒有額外的交接資訊。" : "No additional handover details."}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
       </section>

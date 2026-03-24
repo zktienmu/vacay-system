@@ -261,18 +261,42 @@ export default function AdminReviewPage() {
                           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                             {t("review.delegate")}
                           </span>
-                          <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {(req.delegate_ids?.length
-                              ? req.delegate_ids.map((id) => employeeMap.get(id)).filter(Boolean).join(", ")
-                              : null) || t("review.noneAssigned")}
-                          </span>
+                          <div className="col-span-2">
+                            {req.delegate_assignments?.length ? (
+                              <div className="space-y-3">
+                                {req.delegate_assignments.map((assignment) => (
+                                  <div key={assignment.delegate_id} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-800">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                      {employeeMap.get(assignment.delegate_id) || assignment.delegate_id}
+                                    </p>
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                      {locale === "zh-TW" ? "負責日期：" : "Dates: "}
+                                      {assignment.dates.map((d) => formatDate(d, "MM/dd")).join(", ")}
+                                    </p>
+                                    {assignment.handover_note && (
+                                      <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                        {locale === "zh-TW" ? "交接說明：" : "Handover: "}
+                                        {assignment.handover_note}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                                {(req.delegate_ids?.length
+                                  ? req.delegate_ids.map((id) => employeeMap.get(id)).filter(Boolean).join(", ")
+                                  : null) || t("review.noneAssigned")}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Handover URL */}
                         {req.handover_url && (
                           <div className="grid grid-cols-3 gap-2">
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              {locale === "zh-TW" ? "交接事項" : "Handover"}
+                              {locale === "zh-TW" ? "交接文件" : "Handover doc"}
                             </span>
                             <span className="col-span-2 text-sm">
                               <a
@@ -377,16 +401,16 @@ export default function AdminReviewPage() {
                       <LeaveTypeIcon type={req.leave_type} showLabel />
                       <LeaveStatusBadge status={req.status} />
                       {(req.status === "approved" || req.status === "pending") && (
-                        <span
-                          role="button"
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleCancel(req.id);
                           }}
-                          className="text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                          disabled={actionLoading}
+                          className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
                         >
                           {locale === "zh-TW" ? "取消" : "Cancel"}
-                        </span>
+                        </button>
                       )}
                       <svg
                         className={`h-5 w-5 text-gray-400 transition-transform dark:text-gray-500 ${
@@ -473,18 +497,42 @@ export default function AdminReviewPage() {
                           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                             {t("review.delegate")}
                           </span>
-                          <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {(req.delegate_ids?.length
-                              ? req.delegate_ids.map((id) => employeeMap.get(id)).filter(Boolean).join(", ")
-                              : null) || t("review.noneAssigned")}
-                          </span>
+                          <div className="col-span-2">
+                            {req.delegate_assignments?.length ? (
+                              <div className="space-y-3">
+                                {req.delegate_assignments.map((assignment) => (
+                                  <div key={assignment.delegate_id} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-800">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                      {employeeMap.get(assignment.delegate_id) || assignment.delegate_id}
+                                    </p>
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                      {locale === "zh-TW" ? "負責日期：" : "Dates: "}
+                                      {assignment.dates.map((d) => formatDate(d, "MM/dd")).join(", ")}
+                                    </p>
+                                    {assignment.handover_note && (
+                                      <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                        {locale === "zh-TW" ? "交接說明：" : "Handover: "}
+                                        {assignment.handover_note}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                                {(req.delegate_ids?.length
+                                  ? req.delegate_ids.map((id) => employeeMap.get(id)).filter(Boolean).join(", ")
+                                  : null) || t("review.noneAssigned")}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Handover URL */}
                         {req.handover_url && (
                           <div className="grid grid-cols-3 gap-2">
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              {locale === "zh-TW" ? "交接事項" : "Handover"}
+                              {locale === "zh-TW" ? "交接文件" : "Handover doc"}
                             </span>
                             <span className="col-span-2 text-sm">
                               <a
