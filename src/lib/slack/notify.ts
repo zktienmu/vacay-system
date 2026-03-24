@@ -208,6 +208,39 @@ export async function notifyRejected(
  * Post cancellation notice to the leave channel.
  * Fire-and-forget: errors are logged, never thrown.
  */
+/**
+ * Notify a delegate that they've inherited duties from a chain delegation.
+ * e.g., A delegated to B, but B is now on leave, so C (B's delegate) takes over.
+ */
+export async function notifyChainDelegation(
+  delegateSlackId: string,
+  absentName: string,
+  originalRequesterName: string,
+  leaveDateRange: string,
+  handoverNote: string | null,
+): Promise<void> {
+  if (!slack || !delegateSlackId) return;
+
+  const lines = [
+    `⚠️ *代理轉移通知*`,
+    `${absentName} 在 ${leaveDateRange} 休假，`,
+    `原本 ${originalRequesterName} 交接給 ${absentName} 的任務現在由你負責：`,
+    handoverNote ? `📋 ${handoverNote}` : "",
+    ``,
+    `如有問題請聯繫 ${originalRequesterName} 或 ${absentName}。`,
+  ].filter(Boolean).join("\n");
+
+  try {
+    await slack.chat.postMessage({
+      channel: delegateSlackId,
+      text: `⚠️ 代理轉移：${originalRequesterName} → ${absentName} → 你`,
+      blocks: [{ type: "section", text: { type: "mrkdwn", text: lines } }],
+    });
+  } catch (error) {
+    console.error("[Slack] Failed to send chain delegation notification", error);
+  }
+}
+
 export async function notifyCancelled(
   request: LeaveRequest,
   employee: Employee,

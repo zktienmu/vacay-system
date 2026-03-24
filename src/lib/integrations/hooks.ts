@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "@/lib/supabase/client";
-import { notifyNewRequest, notifyApproved, notifyRejected, notifyCancelled, notifyDelegate } from "@/lib/slack/notify";
+import { notifyNewRequest, notifyApproved, notifyRejected, notifyCancelled, notifyDelegate, notifyChainDelegation } from "@/lib/slack/notify";
 import { createLeaveEvent, deleteLeaveEvent } from "@/lib/google/calendar";
 import type { LeaveRequest, Employee, DelegateAssignment } from "@/types";
 import type { ResolvedDelegateAssignment } from "@/lib/slack/format";
@@ -125,6 +125,47 @@ export async function onLeaveRequestApproved(
         ? { dates: assignment.dates, handover_note: assignment.handover_note }
         : undefined,
     );
+  }
+
+  // Chain delegation: if the approved employee is a delegate for someone else
+  // on overlapping dates, notify their own delegates about inherited duties.
+  try {
+    const { data: affectedLeaves } = await supabase
+      .from("leave_requests")
+      .select("*")
+      .eq("status", "approved")
+      .contains("delegate_ids", [request.employee_id])
+      .lte("start_date", request.end_date)
+      .gte("end_date", request.start_date);
+
+    if (affectedLeaves && affectedLeaves.length > 0) {
+      const { formatDateRange } = await import("@/lib/slack/format");
+      const leaveDateRange = formatDateRange(request.start_date, request.end_date);
+
+      for (const affected of affectedLeaves) {
+        const affectedAssignments: DelegateAssignment[] = affected.delegate_assignments ?? [];
+        const inheritedAssignment = affectedAssignments.find(
+          (a: DelegateAssignment) => a.delegate_id === request.employee_id,
+        );
+        if (!inheritedAssignment) continue;
+
+        const originalRequester = await fetchEmployee(affected.employee_id);
+        const originalName = originalRequester?.name ?? "Unknown";
+
+        for (const delegate of delegates) {
+          if (!delegate.slack_user_id) continue;
+          await notifyChainDelegation(
+            delegate.slack_user_id,
+            employee.name,
+            originalName,
+            leaveDateRange,
+            inheritedAssignment.handover_note,
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[Integrations] Chain delegation check failed", err);
   }
 
   // Create Google Calendar event

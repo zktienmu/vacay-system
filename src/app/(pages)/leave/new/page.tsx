@@ -275,14 +275,14 @@ export default function NewLeavePage() {
           : "Handover document URL is required for leaves of 3+ working days"
       );
     }
-    if (selectedDelegateIds.length === 0) {
+    if (leaveType !== "remote" && selectedDelegateIds.length === 0) {
       errors.push(
         locale === "zh-TW"
           ? "請選擇至少一位代理人"
           : "At least one delegate is required"
       );
     }
-    if (workingDays >= 2 && selectedDelegateIds.length > 0 && !allDatesCovered) {
+    if (leaveType !== "remote" && workingDays >= 2 && selectedDelegateIds.length > 0 && !allDatesCovered) {
       errors.push(
         locale === "zh-TW"
           ? "每個工作日都需要至少一位代理人"
@@ -307,7 +307,7 @@ export default function NewLeavePage() {
 
   const canSubmit =
     startDate && endDate && workingDays > 0 && validationErrors.length === 0 && !submitting &&
-    (!handoverRequired || handoverUrl.trim() !== "") && selectedDelegateIds.length > 0;
+    (!handoverRequired || handoverUrl.trim() !== "") && (leaveType === "remote" || selectedDelegateIds.length > 0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -702,7 +702,8 @@ export default function NewLeavePage() {
           )}
         </div>
 
-        {/* Delegates */}
+        {/* Delegates (not needed for remote) */}
+        {leaveType !== "remote" && (
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
             {t("leave.delegate")} <span className="text-red-500">*</span>
@@ -742,6 +743,7 @@ export default function NewLeavePage() {
           {workingDays > 0 && !handoverRequired && renderDelegateHandoverNotes()}
           {workingDays > 0 && handoverRequired && renderOptionalDelegateHandoverNotes()}
         </div>
+        )}
 
         {/* Handover URL (always visible, required when >= 3 working days) */}
         <div>
