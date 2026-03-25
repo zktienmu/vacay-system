@@ -1,3 +1,6 @@
+// Allow up to 30s for Slack + Google Calendar integrations after approval
+export const maxDuration = 30;
+
 import { NextRequest, NextResponse } from "next/server";
 import { SessionData } from "@/types";
 import { withAuth } from "@/lib/auth/middleware";
@@ -156,15 +159,20 @@ export const PATCH = withAuth(
           getClientIp(req),
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
-      // Fire-and-forget: Slack + Google Calendar integrations
+      // Await integrations BEFORE returning response — Vercel kills the function
+      // after response is sent, so fire-and-forget doesn't work on serverless.
       if (parsed.data.status === "approved") {
-        onLeaveRequestApproved(updated).catch((err) =>
-          console.error("[Integration] onLeaveRequestApproved failed:", err),
-        );
+        try {
+          await onLeaveRequestApproved(updated);
+        } catch (err) {
+          console.error("[Integration] onLeaveRequestApproved failed:", err);
+        }
       } else if (parsed.data.status === "rejected") {
-        onLeaveRequestRejected(updated).catch((err) =>
-          console.error("[Integration] onLeaveRequestRejected failed:", err),
-        );
+        try {
+          await onLeaveRequestRejected(updated);
+        } catch (err) {
+          console.error("[Integration] onLeaveRequestRejected failed:", err);
+        }
       }
 
       return NextResponse.json({ success: true, data: updated });

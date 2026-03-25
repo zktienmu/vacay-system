@@ -251,7 +251,7 @@ export async function updateLeaveRequest(
     .single();
 
   if (error) throw error;
-  return { delegate_ids: [], delegate_assignments: [], ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], ...data } as LeaveRequest;
 }
 
 export async function getApprovedDaysInPeriod(
