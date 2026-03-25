@@ -88,13 +88,11 @@ export function buildNewRequestBlocks(
       fields,
     },
     {
-      type: "context",
-      elements: [
-        {
-          type: "mrkdwn",
-          text: `👉 <${reviewUrl}|點此審核申請>`,
-        },
-      ],
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `👉 <${reviewUrl}|點此審核申請>`,
+      },
     },
   ];
 }
