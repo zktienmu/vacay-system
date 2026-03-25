@@ -1004,7 +1004,8 @@ export default function NewLeavePage() {
         </div>
         )}
 
-        {/* Handover URL (always visible, required when >= 3 working days) */}
+        {/* Handover URL (hidden for remote, required when >= 3 working days) */}
+        {leaveType !== "remote" && (
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
             {locale === "zh-TW" ? "交接文件連結" : "Handover Document URL"}
@@ -1033,6 +1034,7 @@ export default function NewLeavePage() {
                   : "Optional \u2014 provide a handover document URL if needed")}
           </p>
         </div>
+        )}
 
         {/* Notes */}
         <div>
