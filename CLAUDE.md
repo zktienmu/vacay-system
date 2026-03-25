@@ -126,6 +126,13 @@ Optional (graceful degradation): `SLACK_BOT_TOKEN`, `SLACK_LEAVE_CHANNEL_ID`, `G
 - 比較修改前後行為
 - 自問：「資深工程師會 approve 這個嗎？」
 - 跑測試、看 log、實際展示正確性
+- **不要急著說「好了」**——每次改完都要從使用者角度走一遍 edge cases：
+  - 如果 session 壞了/過期了會怎樣？
+  - 如果 DB 欄位不存在會怎樣？
+  - 如果第三方 API（Slack、Google Calendar）失敗會怎樣？
+  - 如果 Vercel serverless function timeout 會怎樣？
+  - 第一次就查到底，不要等使用者追問才深挖
+  - 特別注意有狀態的東西：auth、DB schema、env vars、API credentials
 
 ### Demand Elegance (Balanced)
 - 遇到非瑣碎改動時，先停下來問：「有沒有更優雅的方式？」
