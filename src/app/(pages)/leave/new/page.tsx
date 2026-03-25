@@ -39,8 +39,8 @@ function generateTimeOptions(startHour = 9, endHour = 18): string[] {
   return options;
 }
 
-const TIME_OPTIONS = generateTimeOptions();
-const END_TIME_OPTIONS = generateTimeOptions(9, 18).filter((t) => t !== "09:00"); // end must be after 09:00
+const TIME_OPTIONS = generateTimeOptions(10, 19);
+const END_TIME_OPTIONS = generateTimeOptions(10, 19).filter((t) => t !== "10:00"); // end must be after 10:00
 
 function calculateHoursFromTimes(start: string, end: string): number {
   const [sh, sm] = start.split(":").map(Number);
@@ -107,8 +107,8 @@ export default function NewLeavePage() {
   const [leaveType, setLeaveType] = useState<LeaveType>("annual");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("18:00");
+  const [startTime, setStartTime] = useState("10:00");
+  const [endTime, setEndTime] = useState("19:00");
   // Matrix state: { delegateId -> Set<dateString> }
   const [delegateMatrix, setDelegateMatrix] = useState<Record<string, Set<string>>>({});
   // Per-delegate handover notes
@@ -134,7 +134,7 @@ export default function NewLeavePage() {
     if (!isFamilyCareHourly) return 0;
     return calculateHoursFromTimes(startTime, endTime);
   }, [isFamilyCareHourly, startTime, endTime]);
-  const familyCareDays = isFamilyCareHourly ? Math.round((familyCareHours / 8) * 10) / 10 : workingDays;
+  const familyCareDays = isFamilyCareHourly ? Math.round((familyCareHours / 9) * 10) / 10 : workingDays;
 
   // Effective days for submission (family_care hourly overrides workingDays)
   const effectiveDays = isFamilyCareHourly ? familyCareDays : workingDays;
@@ -728,8 +728,8 @@ export default function NewLeavePage() {
             value={leaveType}
             onChange={(e) => {
               setLeaveType(e.target.value as LeaveType);
-              setStartTime("09:00");
-              setEndTime("18:00");
+              setStartTime("10:00");
+              setEndTime("19:00");
             }}
             className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           >

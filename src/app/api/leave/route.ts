@@ -135,7 +135,7 @@ export const POST = withAuth(
         const [sh, sm] = start_time.split(":").map(Number);
         const [eh, em] = end_time.split(":").map(Number);
         const hours = (eh * 60 + em - (sh * 60 + sm)) / 60;
-        days = Math.round((hours / 8) * 10) / 10;
+        days = Math.round((hours / 9) * 10) / 10; // 1 day = 9 hours (10:00-19:00)
       }
 
       if (days === 0) {
