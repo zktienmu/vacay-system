@@ -31,7 +31,7 @@ const LEAVE_TYPES: LeaveType[] = [
 ];
 
 const LEAVE_TYPE_POLICY_LABELS: Partial<Record<LeaveType, { "zh-TW": string; en: string }>> = {
-  family_care: { "zh-TW": "家庭照顧假（天/14天上限）", en: "Family Care (days / 14-day cap)" },
+  family_care: { "zh-TW": "家庭照顧假（天/7天上限）", en: "Family Care (days / 7-day cap)" },
   menstrual: { "zh-TW": "生理假（天/月）", en: "Menstrual (days/month)" },
 };
 
