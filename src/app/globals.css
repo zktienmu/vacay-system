@@ -48,7 +48,7 @@ body {
 
 /* Headings use Instrument Serif */
 h1, h2, h3 {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: 'Instrument Serif', 'Noto Serif TC', Georgia, serif;
   font-weight: 400;
 }
 
