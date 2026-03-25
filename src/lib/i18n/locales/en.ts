@@ -59,6 +59,8 @@ const en = {
       official: "Official",
       unpaid: "Unpaid",
       remote: "Remote",
+      family_care: "Family Care",
+      menstrual: "Menstrual",
     },
     status: {
       pending: "Pending",

@@ -31,7 +31,9 @@ export type LeaveType =
   | "sick"
   | "official"
   | "unpaid"
-  | "remote";
+  | "remote"
+  | "family_care"
+  | "menstrual";
 
 export interface LeavePolicy {
   id: string;

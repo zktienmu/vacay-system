@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "@/lib/supabase/client";
-import { notifyNewRequest, notifyApproved, notifyRejected, notifyCancelled, notifyDelegate, notifyChainDelegation } from "@/lib/slack/notify";
+import { notifyNewRequest, notifyApproved, notifyRejected, notifyCancelled, notifyDelegate, notifyChainDelegation, notifyFamilyCareApproval } from "@/lib/slack/notify";
 import { createLeaveEvent, deleteLeaveEvent } from "@/lib/google/calendar";
 import type { LeaveRequest, Employee, DelegateAssignment, ChainDelegation } from "@/types";
 import type { ResolvedDelegateAssignment } from "@/lib/slack/format";
@@ -187,6 +187,30 @@ export async function onLeaveRequestApproved(
     }
   } catch (err) {
     console.error("[Integrations] Chain delegation check failed", err);
+  }
+
+  // Notify HR (hsuanting + olivia) for family_care leave (pay deduction required)
+  if (request.leave_type === "family_care") {
+    try {
+      const { data: hrPeople } = await supabase
+        .from("employees")
+        .select("*")
+        .in("name", ["Hsuanting", "hsuanting"]);
+
+      const { data: hrPeople2 } = await supabase
+        .from("employees")
+        .select("*")
+        .in("name", ["Olivia", "olivia"]);
+
+      const allHr = [...(hrPeople ?? []), ...(hrPeople2 ?? [])];
+
+      for (const hr of allHr) {
+        if (!hr.slack_user_id) continue;
+        await notifyFamilyCareApproval(hr.slack_user_id, request, employee);
+      }
+    } catch (err) {
+      console.error("[Integrations] Family care HR notification failed:", err);
+    }
   }
 
   // Create Google Calendar event (skip if caller handles it separately)

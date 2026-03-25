@@ -286,6 +286,7 @@ describe('POST /api/leave', () => {
         end_date: '2026-04-10',
         delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
         handover_url: 'https://docs.google.com/handover',
+        notes: 'Unpaid leave reason',
       }),
     })
     const res = await POST(req, { params: Promise.resolve({}) })
@@ -307,6 +308,7 @@ describe('POST /api/leave', () => {
         end_date: '2026-04-10',
         delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
         handover_url: 'https://docs.google.com/handover',
+        notes: 'Official business trip',
       }),
     })
     const res = await POST(req, { params: Promise.resolve({}) })

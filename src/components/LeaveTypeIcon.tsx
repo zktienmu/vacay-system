@@ -13,6 +13,8 @@ const leaveTypeConfig: Record<
   official: { emoji: "\uD83D\uDCBC", color: "text-teal-600 dark:text-teal-400" },
   unpaid: { emoji: "\uD83D\uDCCB", color: "text-gray-600 dark:text-gray-400" },
   remote: { emoji: "\uD83C\uDFE0", color: "text-green-600 dark:text-green-400" },
+  family_care: { emoji: "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67", color: "text-amber-600 dark:text-amber-400" },
+  menstrual: { emoji: "\uD83E\uDE78", color: "text-pink-600 dark:text-pink-400" },
 };
 
 export function getLeaveTypeEmoji(type: LeaveType): string {
@@ -28,6 +30,8 @@ export function getLeaveTypeLabel(type: LeaveType): string {
     official: "Official",
     unpaid: "Unpaid",
     remote: "Remote",
+    family_care: "Family Care",
+    menstrual: "Menstrual",
   };
   return labels[type];
 }

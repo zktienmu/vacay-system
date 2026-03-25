@@ -12,6 +12,8 @@ const leaveTypeEmojis: Record<LeaveType, string> = {
   official: "💼",
   unpaid: "📋",
   remote: "🏠",
+  family_care: "👨‍👩‍👧",
+  menstrual: "🩸",
 };
 
 // Initialize Google Calendar API only if all required env vars are set

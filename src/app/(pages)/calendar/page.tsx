@@ -14,6 +14,8 @@ const leaveTypeColors: Record<LeaveType, string> = {
   official: "#14B8A6",  // teal
   unpaid: "#6B7280",    // gray
   remote: "#22C55E",    // green
+  family_care: "#F59E0B", // amber
+  menstrual: "#EC4899",   // pink
 };
 
 interface CalendarEvent {

@@ -266,3 +266,35 @@ export async function notifyCancelled(
     }
   }
 }
+
+/**
+ * Notify HR about an approved family care leave (pay deduction required).
+ * Fire-and-forget: errors are logged, never thrown.
+ */
+export async function notifyFamilyCareApproval(
+  hrSlackId: string,
+  request: LeaveRequest,
+  employee: Employee,
+): Promise<void> {
+  if (!slack || !hrSlackId) return;
+
+  const dateRange = formatDateRange(request.start_date, request.end_date);
+  const lines = [
+    `\u26A0\uFE0F *\u5BB6\u5EAD\u7167\u9867\u5047\u901A\u77E5\uFF08\u9700\u6263\u85AA\uFF09*`,
+    `${employee.name} \u5DF2\u6838\u6E96\u5BB6\u5EAD\u7167\u9867\u5047`,
+    `\uD83D\uDCC5 \u65E5\u671F\uFF1A${dateRange}\uFF08${request.days} \u5929\uFF09`,
+    request.notes ? `\uD83D\uDCDD \u4E8B\u7531\uFF1A${request.notes}` : "",
+    ``,
+    `\u6B64\u5047\u5225\u9700\u8981\u6263\u85AA\uFF0C\u8ACB\u7559\u610F\u85AA\u8CC7\u8A08\u7B97\u3002`,
+  ].filter(Boolean).join("\n");
+
+  try {
+    await slack.chat.postMessage({
+      channel: hrSlackId,
+      text: `\u26A0\uFE0F ${employee.name} \u5BB6\u5EAD\u7167\u9867\u5047\u5DF2\u6838\u6E96\uFF08\u9700\u6263\u85AA\uFF09`,
+      blocks: [{ type: "section", text: { type: "mrkdwn", text: lines } }],
+    });
+  } catch (error) {
+    console.error("[Slack] Failed to notify HR about family care leave", error);
+  }
+}

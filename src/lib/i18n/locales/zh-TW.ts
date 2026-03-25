@@ -59,6 +59,8 @@ const zhTW = {
       official: "公假",
       unpaid: "無薪假",
       remote: "遠端工作",
+      family_care: "家庭照顧假",
+      menstrual: "生理假",
     },
     status: {
       pending: "審核中",

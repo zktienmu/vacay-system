@@ -7,6 +7,8 @@ const leaveTypes = [
   "official",
   "unpaid",
   "remote",
+  "family_care",
+  "menstrual",
 ] as const;
 
 const leaveStatuses = ["approved", "rejected"] as const;
@@ -56,6 +58,13 @@ export const createLeaveRequestSchema = z
   .refine(
     (data) => new Date(data.end_date) >= new Date(data.start_date),
     { message: "End date must be on or after start date" },
+  )
+  .refine(
+    (data) => data.leave_type === "annual" || data.leave_type === "remote" || (data.notes && data.notes.trim() !== ""),
+    {
+      message: "事由為必填（特休和遠端工作除外）",
+      path: ["notes"],
+    },
   );
 
 export const updateLeaveStatusSchema = z.object({

@@ -24,6 +24,8 @@ const LEAVE_TYPES: LeaveType[] = [
   "official",
   "unpaid",
   "remote",
+  "family_care",
+  "menstrual",
 ];
 
 /** Day-of-week abbreviations for column headers */
@@ -321,6 +323,13 @@ export default function NewLeavePage() {
           : "Handover document URL is required for leaves of 3+ working days"
       );
     }
+    if (leaveType !== "annual" && leaveType !== "remote" && !notes.trim()) {
+      errors.push(
+        locale === "zh-TW"
+          ? "此假別需要填寫事由"
+          : "Reason is required for this leave type"
+      );
+    }
     if (leaveType !== "remote" && selectedDelegateIds.length === 0) {
       errors.push(
         locale === "zh-TW"
@@ -362,7 +371,7 @@ export default function NewLeavePage() {
       }
     }
     return errors;
-  }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale, handoverRequired, handoverUrl, selectedDelegateIds, allDatesCovered, delegateNotes, chainDuties, chainReassignments]);
+  }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale, handoverRequired, handoverUrl, notes, selectedDelegateIds, allDatesCovered, delegateNotes, chainDuties, chainReassignments]);
 
   const canSubmit =
     startDate && endDate && workingDays > 0 && validationErrors.length === 0 && !submitting &&
@@ -759,6 +768,11 @@ export default function NewLeavePage() {
               {startDate && endDate ? formatDays(workingDays) : "\u2014"}
             </span>
           </div>
+          {leaveType === "family_care" && (
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+              {locale === "zh-TW" ? "(可以小時為單位)" : "(hourly units allowed)"}
+            </p>
+          )}
           {remainingAfter !== null && startDate && endDate && (
             <div className="mt-1 flex items-center justify-between">
               <span className="text-sm text-accent">
@@ -928,7 +942,12 @@ export default function NewLeavePage() {
         {/* Notes */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {t("leave.notes")}
+            {leaveType !== "annual" && leaveType !== "remote"
+              ? (locale === "zh-TW" ? "事由" : "Reason")
+              : t("leave.notes")}
+            {leaveType !== "annual" && leaveType !== "remote" && (
+              <span className="ml-0.5 text-red-500">*</span>
+            )}
           </label>
           <textarea
             value={notes}

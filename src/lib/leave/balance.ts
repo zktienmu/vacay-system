@@ -153,6 +153,28 @@ export async function getLeaveBalance(
     };
   }
 
+  // Menstrual leave: use current calendar month as the period (2-day limit resets monthly)
+  if (leaveType === "menstrual") {
+    const today = new Date();
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const periodStart = formatDate(monthStart);
+    const periodEnd = formatDate(monthEnd);
+
+    const usedDays = await getApprovedDaysInPeriod(
+      employeeId, leaveType, periodStart, periodEnd,
+    );
+
+    return {
+      leave_type: leaveType,
+      total_days: totalDays,
+      used_days: usedDays,
+      remaining_days: unlimited ? Infinity : totalDays - usedDays,
+      transition_days: null,
+      transition_used_days: null,
+    };
+  }
+
   // No transition: use standard anniversary period
   const { periodStart, periodEnd } = calculateAnniversaryPeriod(
     employeeStartDate,
