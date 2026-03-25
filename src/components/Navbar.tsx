@@ -103,8 +103,7 @@ export default function Navbar() {
                 <Link
                   href="/dashboard"
                   className="flex items-center gap-2 text-xl text-gray-900 dark:text-gray-100"
-                  style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
-                >
+                                  >
                   Dinngo 請假系統
                 </Link>
               </div>

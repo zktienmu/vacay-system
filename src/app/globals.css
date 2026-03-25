@@ -46,10 +46,10 @@ body {
   border-radius: 9999px !important;
 }
 
-/* Headings use Instrument Serif */
+/* Headings use SF Pro (Apple system font) */
 h1, h2, h3 {
-  font-family: 'Instrument Serif', 'Noto Serif TC', Georgia, serif;
-  font-weight: 400;
+  font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 600;
 }
 
 /* Accent color utility classes */

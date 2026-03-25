@@ -53,7 +53,7 @@ export default function BalanceCard({ balance }: { balance: LeaveBalance }) {
           <span className="text-lg font-bold">
             {locale === "zh-TW" ? "已經使用" : "Used"}
           </span>
-          <span className="text-5xl tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+          <span className="text-5xl tracking-tight">
             {used_days}
           </span>
           <span className="text-lg font-bold">
@@ -73,7 +73,7 @@ export default function BalanceCard({ balance }: { balance: LeaveBalance }) {
             {label}
           </h3>
         </div>
-        <span className="text-2xl text-gray-900 dark:text-gray-100" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+        <span className="text-2xl text-gray-900 dark:text-gray-100">
           {totalRemaining}
         </span>
       </div>
