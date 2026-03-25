@@ -340,6 +340,19 @@ export default function NewLeavePage() {
     if (workingDays === 0 && startDate && endDate) {
       errors.push(t("leave.validationNoWorkingDays"));
     }
+    if (startDate && (leaveType === "annual" || leaveType === "personal")) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const minDate = new Date(today);
+      minDate.setDate(minDate.getDate() + 7);
+      if (parseISO(startDate) < minDate) {
+        errors.push(
+          locale === "zh-TW"
+            ? "特休和事假需要在 7 天前提出申請"
+            : "Annual and personal leave must be submitted at least 7 days in advance"
+        );
+      }
+    }
     if (remainingAfter !== null && remainingAfter < 0) {
       errors.push(
         t("leave.validationInsufficientBalance", {

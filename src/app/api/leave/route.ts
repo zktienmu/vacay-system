@@ -125,6 +125,21 @@ export const POST = withAuth(
             { status: 400 },
           );
         }
+
+        // Annual and personal leave must be submitted at least 7 days in advance
+        if (leave_type === "annual" || leave_type === "personal") {
+          const minDate = new Date(today);
+          minDate.setDate(minDate.getDate() + 7);
+          if (new Date(start_date) < minDate) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: "特休和事假需要在 7 天前提出申請 / Annual and personal leave must be submitted at least 7 days in advance",
+              },
+              { status: 400 },
+            );
+          }
+        }
       }
 
       let days = await calculateWorkingDaysExcludingHolidays(start_date, end_date);
