@@ -139,6 +139,7 @@ Optional (graceful degradation): `SLACK_BOT_TOKEN`, `SLACK_LEAVE_CHANNEL_ID`, `G
   - 如果 Vercel serverless function timeout 會怎樣？
   - 第一次就查到底，不要等使用者追問才深挖
   - 特別注意有狀態的東西：auth、DB schema、env vars、API credentials
+  - **新增/刪除 leave type 時**：必須同時更新 DB CHECK constraint（leave_requests + leave_policies 兩張表都有），並提醒使用者跑 migration
 
 ### Demand Elegance (Balanced)
 - 遇到非瑣碎改動時，先停下來問：「有沒有更優雅的方式？」
