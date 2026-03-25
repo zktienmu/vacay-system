@@ -41,7 +41,7 @@ export const POST = withAdmin(
 
       if (slack_only) {
         // Re-trigger all Slack notifications (delegate DMs, channel post, etc.)
-        await onLeaveRequestApproved(request);
+        await onLeaveRequestApproved(request, { skipCalendar: true });
         return NextResponse.json({ success: true, data: { synced: "slack" } });
       }
 
@@ -69,7 +69,7 @@ export const POST = withAdmin(
       }
 
       // Also re-trigger Slack notifications
-      await onLeaveRequestApproved(request);
+      await onLeaveRequestApproved(request, { skipCalendar: true });
 
       return NextResponse.json({
         success: true,

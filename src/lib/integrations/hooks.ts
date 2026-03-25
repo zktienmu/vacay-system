@@ -68,6 +68,7 @@ export async function onLeaveRequestCreated(
  */
 export async function onLeaveRequestApproved(
   request: LeaveRequest,
+  options?: { skipCalendar?: boolean },
 ): Promise<void> {
   const employee = await fetchEmployee(request.employee_id);
   if (!employee) {
@@ -188,22 +189,23 @@ export async function onLeaveRequestApproved(
     console.error("[Integrations] Chain delegation check failed", err);
   }
 
-  // Create Google Calendar event
-  const eventId = await createLeaveEvent(request, employee.name);
+  // Create Google Calendar event (skip if caller handles it separately)
+  if (!options?.skipCalendar) {
+    const eventId = await createLeaveEvent(request, employee.name);
 
-  // Update the leave request with the calendar event ID
-  if (eventId) {
-    const { error } = await supabase
-      .from("leave_requests")
-      .update({ calendar_event_id: eventId })
-      .eq("id", request.id);
+    if (eventId) {
+      const { error } = await supabase
+        .from("leave_requests")
+        .update({ calendar_event_id: eventId })
+        .eq("id", request.id);
 
-    if (error) {
-      console.error(
-        "[Integrations] Failed to update calendar_event_id",
-        request.id,
-        error,
-      );
+      if (error) {
+        console.error(
+          "[Integrations] Failed to update calendar_event_id",
+          request.id,
+          error,
+        );
+      }
     }
   }
 }
