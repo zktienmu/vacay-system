@@ -225,6 +225,9 @@ export default function AdminReviewPage() {
                       <div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                           {employeeMap.get(req.employee_id) || req.employee?.name || t("common.unknown")}
+                          {req.serial_number && (
+                            <span className="ml-2 font-mono text-xs font-normal text-gray-400 dark:text-gray-500">{req.serial_number}</span>
+                          )}
                         </p>
                         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                           {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
@@ -258,6 +261,18 @@ export default function AdminReviewPage() {
                   {isExpanded && (
                     <div className="border-t border-gray-100 bg-gray-50 px-6 py-5 dark:border-gray-700 dark:bg-gray-900/50">
                       <div className="space-y-3">
+                        {/* Serial number */}
+                        {req.serial_number && (
+                          <div className="grid grid-cols-3 gap-2">
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              {locale === "zh-TW" ? "申請編號" : "No."}
+                            </span>
+                            <span className="col-span-2 text-sm font-mono text-gray-900 dark:text-gray-100">
+                              {req.serial_number}
+                            </span>
+                          </div>
+                        )}
+
                         {/* Dates */}
                         <div className="grid grid-cols-3 gap-2">
                           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -344,14 +359,20 @@ export default function AdminReviewPage() {
                           </span>
                         </div>
 
-                        {/* Submitted */}
+                        {/* Timeline */}
                         <div className="grid grid-cols-3 gap-2">
                           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            {t("review.submitted")}
+                            {locale === "zh-TW" ? "時間軸" : "Timeline"}
                           </span>
-                          <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {formatDate(req.created_at, "yyyy/MM/dd HH:mm")}
-                          </span>
+                          <div className="col-span-2 space-y-2">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500"></div>
+                              <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(req.created_at, "yyyy/MM/dd HH:mm")}</p>
+                                <p className="text-sm text-gray-900 dark:text-gray-100">{locale === "zh-TW" ? "提出申請" : "Submitted"}</p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -411,6 +432,9 @@ export default function AdminReviewPage() {
                       <div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                           {employeeMap.get(req.employee_id) || req.employee?.name || t("common.unknown")}
+                          {req.serial_number && (
+                            <span className="ml-2 font-mono text-xs font-normal text-gray-400 dark:text-gray-500">{req.serial_number}</span>
+                          )}
                         </p>
                         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                           {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
@@ -462,6 +486,9 @@ export default function AdminReviewPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {employeeMap.get(req.employee_id) || req.employee?.name || t("common.unknown")}
+                          {req.serial_number && (
+                            <span className="ml-1 font-mono text-xs font-normal text-gray-400 dark:text-gray-500">{req.serial_number}</span>
+                          )}
                         </span>
                         <LeaveStatusBadge status={req.status} />
                       </div>
@@ -494,6 +521,18 @@ export default function AdminReviewPage() {
                   {isExpanded && (
                     <div className="border-t border-gray-100 bg-gray-50 px-6 py-5 dark:border-gray-700 dark:bg-gray-900/50">
                       <div className="space-y-3">
+                        {/* Serial number */}
+                        {req.serial_number && (
+                          <div className="grid grid-cols-3 gap-2">
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              {locale === "zh-TW" ? "申請編號" : "No."}
+                            </span>
+                            <span className="col-span-2 text-sm font-mono text-gray-900 dark:text-gray-100">
+                              {req.serial_number}
+                            </span>
+                          </div>
+                        )}
+
                         {/* Dates */}
                         <div className="grid grid-cols-3 gap-2">
                           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -580,14 +619,37 @@ export default function AdminReviewPage() {
                           </span>
                         </div>
 
-                        {/* Review info */}
+                        {/* Timeline */}
                         <div className="grid grid-cols-3 gap-2">
                           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            {locale === "zh-TW" ? "審核" : "Review"}
+                            {locale === "zh-TW" ? "時間軸" : "Timeline"}
                           </span>
-                          <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {getReviewText(req)}
-                          </span>
+                          <div className="col-span-2 space-y-2">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500"></div>
+                              <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(req.created_at, "yyyy/MM/dd HH:mm")}</p>
+                                <p className="text-sm text-gray-900 dark:text-gray-100">{locale === "zh-TW" ? "提出申請" : "Submitted"}</p>
+                              </div>
+                            </div>
+                            {req.reviewed_at && req.status !== "pending" && (
+                              <div className="flex items-start gap-3">
+                                <div className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${req.status === "approved" ? "bg-green-500" : req.status === "rejected" ? "bg-red-500" : "bg-gray-400"}`}></div>
+                                <div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(req.reviewed_at, "yyyy/MM/dd HH:mm")}</p>
+                                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                                    {req.status === "cancelled"
+                                      ? (req.reviewed_by === req.employee_id
+                                        ? (locale === "zh-TW" ? "本人取消" : "Self-cancelled")
+                                        : (locale === "zh-TW" ? `${employeeMap.get(req.reviewed_by!) || "未知"} 取消` : `${employeeMap.get(req.reviewed_by!) || "Unknown"} cancelled`))
+                                      : (locale === "zh-TW"
+                                        ? `${employeeMap.get(req.reviewed_by!) || "未知"} ${req.status === "approved" ? "核准" : "駁回"}`
+                                        : `${employeeMap.get(req.reviewed_by!) || "Unknown"} ${req.status === "approved" ? "approved" : "rejected"}`)}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Actions */}

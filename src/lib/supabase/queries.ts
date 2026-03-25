@@ -192,6 +192,7 @@ export async function getLeaveRequests(filters: {
     delegate_ids: [],
     delegate_assignments: [],
     chain_delegations: [],
+    serial_number: null,
     ...r,
   })) as unknown as LeaveRequest[];
 }
@@ -210,20 +211,39 @@ export async function getLeaveRequestById(
     throw error;
   }
 
-  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], serial_number: null, ...data } as LeaveRequest;
 }
 
 export async function createLeaveRequest(
   requestData: Omit<
     LeaveRequest,
-    "id" | "reviewed_by" | "reviewed_at" | "calendar_event_id" | "created_at" | "updated_at"
+    "id" | "serial_number" | "reviewed_by" | "reviewed_at" | "calendar_event_id" | "created_at" | "updated_at"
   > & { reviewed_by?: string | null; reviewed_at?: string | null },
 ): Promise<LeaveRequest> {
+  // Generate serial number (e.g. "2026-0001")
+  const year = new Date().getFullYear().toString();
+  let serialNumber = `${year}-0001`;
+  try {
+    const { data: lastRow } = await supabase
+      .from("leave_requests")
+      .select("serial_number")
+      .like("serial_number", `${year}-%`)
+      .order("serial_number", { ascending: false })
+      .limit(1);
+    if (lastRow && lastRow.length > 0 && lastRow[0].serial_number) {
+      const lastNum = parseInt(lastRow[0].serial_number.split("-")[1], 10);
+      serialNumber = `${year}-${String(lastNum + 1).padStart(4, "0")}`;
+    }
+  } catch {
+    // If serial_number column doesn't exist yet, skip
+  }
+
   // Only include array fields when non-empty, so DB defaults are used
   // and inserts work before migrations add the columns.
   const { delegate_ids, delegate_assignments, chain_delegations, ...rest } = requestData;
   const insertPayload = {
     ...rest,
+    serial_number: serialNumber,
     ...(delegate_ids?.length ? { delegate_ids } : {}),
     ...(delegate_assignments?.length ? { delegate_assignments } : {}),
     ...(chain_delegations?.length ? { chain_delegations } : {}),
@@ -236,7 +256,7 @@ export async function createLeaveRequest(
     .single();
 
   if (error) throw error;
-  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], serial_number: null, ...data } as LeaveRequest;
 }
 
 export async function updateLeaveRequest(
@@ -251,7 +271,7 @@ export async function updateLeaveRequest(
     .single();
 
   if (error) throw error;
-  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], serial_number: null, ...data } as LeaveRequest;
 }
 
 export async function getApprovedDaysInPeriod(
@@ -346,6 +366,7 @@ export async function getOverlappingLeaveRequests(
   return (data ?? []).map((r: Record<string, unknown>) => ({
     delegate_ids: [],
     delegate_assignments: [],
+    serial_number: null,
     ...r,
   })) as unknown as LeaveRequest[];
 }
@@ -370,6 +391,7 @@ export async function getActiveDelegateDuties(
     delegate_ids: [],
     delegate_assignments: [],
     chain_delegations: [],
+    serial_number: null,
     ...r,
   })) as unknown as LeaveRequest[];
 }
@@ -403,6 +425,7 @@ export async function getDelegatedLeaves(
       delegate_ids: [],
       delegate_assignments: [],
       chain_delegations: [],
+      serial_number: null,
       ...r,
     })) as unknown as LeaveRequest[];
   }
@@ -410,6 +433,7 @@ export async function getDelegatedLeaves(
   return (data ?? []).map((r: Record<string, unknown>) => ({
     delegate_ids: [],
     delegate_assignments: [],
+    serial_number: null,
     ...r,
   })) as unknown as LeaveRequest[];
 }

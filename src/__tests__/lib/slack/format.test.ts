@@ -118,9 +118,10 @@ describe('buildNewRequestBlocks', () => {
     expect(fieldsSection.fields[1].text).toContain('Family vacation')
     expect(fieldsSection.fields[2].text).toContain('交接事項')
 
-    // Actions block has a review button with correct URL
-    const actionsBlock = blocks[3] as { type: string; elements: { url: string }[] }
-    expect(actionsBlock.elements[0].url).toBe('https://vaca-blond.vercel.app/admin/review/lr-100')
+    // Context block has a review link with correct URL
+    const contextBlock = blocks[3] as { type: string; elements: { text: string }[] }
+    expect(contextBlock.type).toBe('context')
+    expect(contextBlock.elements[0].text).toContain('https://vaca-blond.vercel.app/admin/review/lr-100')
   })
 
   it('omits notes and handover fields when null', () => {

@@ -74,6 +74,7 @@ export function mockLeaveRequest(overrides: Partial<LeaveRequest> = {}): LeaveRe
     status: 'pending',
     reviewed_by: null,
     reviewed_at: null,
+    serial_number: null,
     calendar_event_id: null,
     created_at: '2026-03-20T00:00:00Z',
     updated_at: '2026-03-20T00:00:00Z',

@@ -75,6 +75,7 @@ export interface LeaveRequest {
   status: LeaveStatus;
   reviewed_by: string | null;
   reviewed_at: string | null;
+  serial_number: string | null;
   calendar_event_id: string | null;
   created_at: string;
   updated_at: string;

@@ -60,6 +60,8 @@ export function buildNewRequestBlocks(
   const dateRange = formatDateRange(request.start_date, request.end_date);
   const reviewUrl = `${appUrl}/admin/review/${request.id}`;
 
+  const serialLabel = request.serial_number ? ` (${request.serial_number})` : "";
+
   const fields: { type: "mrkdwn"; text: string }[] = [
     { type: "mrkdwn", text: `📅 *日期：*${dateRange}（${request.days} 天）` },
   ];
@@ -79,21 +81,18 @@ export function buildNewRequestBlocks(
     },
     {
       type: "section",
-      text: { type: "mrkdwn", text: `*${employee.name}* 申請 *${typeLabel}*` },
+      text: { type: "mrkdwn", text: `*${employee.name}* 申請 *${typeLabel}*${serialLabel}` },
     },
     {
       type: "section",
       fields,
     },
     {
-      type: "actions",
+      type: "context",
       elements: [
         {
-          type: "button",
-          text: { type: "plain_text", text: "審核申請", emoji: true },
-          url: reviewUrl,
-          style: "primary",
-          action_id: "review_request",
+          type: "mrkdwn",
+          text: `👉 <${reviewUrl}|點此審核申請>`,
         },
       ],
     },
@@ -120,6 +119,7 @@ export function buildApprovedBlocks(
 ): (KnownBlock | Block)[] {
   const typeLabel = formatLeaveType(request.leave_type);
   const dateRange = formatDateRange(request.start_date, request.end_date);
+  const serialLabel = request.serial_number ? ` (${request.serial_number})` : "";
 
   const details: string[] = [
     `📅 日期：${dateRange}（${request.days} 天）`,
@@ -152,7 +152,7 @@ export function buildApprovedBlocks(
     },
     {
       type: "section",
-      text: { type: "mrkdwn", text: `*${employee.name}* — ${typeLabel}` },
+      text: { type: "mrkdwn", text: `*${employee.name}* — ${typeLabel}${serialLabel}` },
     },
     {
       type: "section",
@@ -170,6 +170,7 @@ export function buildRejectedBlocks(
 ): (KnownBlock | Block)[] {
   const typeLabel = formatLeaveType(request.leave_type);
   const dateRange = formatDateRange(request.start_date, request.end_date);
+  const serialLabel = request.serial_number ? ` (${request.serial_number})` : "";
 
   return [
     {
@@ -180,7 +181,7 @@ export function buildRejectedBlocks(
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*${employee.name}* 的 *${typeLabel}* 申請（${dateRange}）已被駁回。`,
+        text: `*${employee.name}* 的 *${typeLabel}* 申請（${dateRange}）${serialLabel}已被駁回。`,
       },
     },
   ];
@@ -195,6 +196,7 @@ export function buildCancelledBlocks(
 ): (KnownBlock | Block)[] {
   const typeLabel = formatLeaveType(request.leave_type);
   const dateRange = formatDateRange(request.start_date, request.end_date);
+  const serialLabel = request.serial_number ? ` (${request.serial_number})` : "";
 
   return [
     {
@@ -205,7 +207,7 @@ export function buildCancelledBlocks(
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*${employee.name}* 取消了 *${typeLabel}*（${dateRange}，${request.days} 天）`,
+        text: `*${employee.name}* 取消了 *${typeLabel}*（${dateRange}，${request.days} 天）${serialLabel}`,
       },
     },
   ];
