@@ -481,6 +481,9 @@ export default function NewLeavePage() {
   }
 
   const today = format(new Date(), "yyyy-MM-dd");
+  const minDateForLeave = (leaveType === "annual" || leaveType === "personal")
+    ? format(addDays(new Date(), 7), "yyyy-MM-dd")
+    : today;
 
   function formatDays(n: number) {
     if (locale === "zh-TW") return `${n} ${t("common.day")}`;
@@ -779,7 +782,7 @@ export default function NewLeavePage() {
             <input
               type="date"
               value={startDate}
-              min={today}
+              min={minDateForLeave}
               onChange={(e) => {
                 setStartDate(e.target.value);
                 if (endDate && e.target.value > endDate) {
@@ -799,7 +802,7 @@ export default function NewLeavePage() {
             <input
               type="date"
               value={endDate}
-              min={startDate || today}
+              min={startDate || minDateForLeave}
               onChange={(e) => {
                 setEndDate(e.target.value);
                 // Reset delegate matrix when dates change
