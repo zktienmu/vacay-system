@@ -15,6 +15,18 @@ export default function PagesLayout({
   const router = useRouter();
   const { t } = useTranslation();
 
+  // Track user activity for idle timeout
+  useEffect(() => {
+    const update = () => localStorage.setItem("vaca-last-activity", String(Date.now()));
+    update(); // Mark active on mount
+    window.addEventListener("click", update);
+    window.addEventListener("keydown", update);
+    return () => {
+      window.removeEventListener("click", update);
+      window.removeEventListener("keydown", update);
+    };
+  }, []);
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       // Clear the invalid session cookie before redirecting,

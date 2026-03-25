@@ -3,11 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAppKitAccount } from "@reown/appkit/react";
-import { useSignMessage, useChainId } from "wagmi";
+import { useDisconnect, useSignMessage, useChainId } from "wagmi";
 import { SiweMessage } from "siwe";
 import { useSession } from "@/hooks/useSession";
 import { useTranslation } from "@/lib/i18n/context";
 import type { ApiResponse } from "@/types";
+
+const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour
+const ACTIVITY_KEY = "vaca-last-activity";
 
 type LoginStep = "idle" | "connecting" | "signing" | "verifying" | "done";
 
@@ -16,12 +19,27 @@ export default function LoginPage() {
   const { address, isConnected } = useAppKitAccount();
   const chainId = useChainId();
   const { signMessageAsync } = useSignMessage();
+  const { disconnectAsync } = useDisconnect();
   const { isAuthenticated, isLoading, refetch } = useSession();
   const { t } = useTranslation();
 
   const [step, setStep] = useState<LoginStep>("idle");
   const [error, setError] = useState<string | null>(null);
   const [hasTriedSiwe, setHasTriedSiwe] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  // If wallet is connected but session is invalid, disconnect wallet first
+  // This prevents the auto-SIWE from firing while WalletConnect is in a stale state
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && isConnected && !disconnecting) {
+      const lastActivity = localStorage.getItem(ACTIVITY_KEY);
+      const isIdle = !lastActivity || Date.now() - Number(lastActivity) > IDLE_TIMEOUT_MS;
+      if (isIdle) {
+        setDisconnecting(true);
+        disconnectAsync().catch(() => {}).finally(() => setDisconnecting(false));
+      }
+    }
+  }, [isLoading, isAuthenticated, isConnected, disconnecting, disconnectAsync]);
 
   // Redirect if already authenticated
   useEffect(() => {
