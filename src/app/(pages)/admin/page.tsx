@@ -95,7 +95,7 @@ export default function AdminReviewPage() {
           </p>
           <Link
             href="/dashboard"
-            className="mt-4 inline-block text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            className="mt-4 inline-block text-accent hover:text-accent-hover"
           >
             {t("common.goToDashboard")}
           </Link>
@@ -341,7 +341,7 @@ export default function AdminReviewPage() {
                                 href={req.handover_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                className="text-accent underline hover:text-accent-hover"
                               >
                                 {req.handover_url}
                               </a>
@@ -366,7 +366,7 @@ export default function AdminReviewPage() {
                           </span>
                           <div className="col-span-2 space-y-2">
                             <div className="flex items-start gap-3">
-                              <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500"></div>
+                              <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent"></div>
                               <div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(req.created_at, "yyyy/MM/dd HH:mm")}</p>
                                 <p className="text-sm text-gray-900 dark:text-gray-100">{locale === "zh-TW" ? "提出申請" : "Submitted"}</p>
@@ -601,7 +601,7 @@ export default function AdminReviewPage() {
                                 href={req.handover_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                className="text-accent underline hover:text-accent-hover"
                               >
                                 {req.handover_url}
                               </a>
@@ -626,7 +626,7 @@ export default function AdminReviewPage() {
                           </span>
                           <div className="col-span-2 space-y-2">
                             <div className="flex items-start gap-3">
-                              <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500"></div>
+                              <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent"></div>
                               <div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(req.created_at, "yyyy/MM/dd HH:mm")}</p>
                                 <p className="text-sm text-gray-900 dark:text-gray-100">{locale === "zh-TW" ? "提出申請" : "Submitted"}</p>
@@ -658,7 +658,7 @@ export default function AdminReviewPage() {
                             <button
                               onClick={() => handleCalendarSync(req.id)}
                               disabled={syncingId === req.id}
-                              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+                              className="bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
                             >
                               {syncingId === req.id
                                 ? (locale === "zh-TW" ? "同步中..." : "Syncing...")

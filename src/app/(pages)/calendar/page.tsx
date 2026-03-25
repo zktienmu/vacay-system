@@ -115,7 +115,7 @@ export default function CalendarPage() {
       {isLoading ? (
         <div className="flex h-96 items-center justify-center rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500 dark:border-gray-700 dark:border-t-blue-400" />
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-accent dark:border-gray-700 dark:border-t-accent" />
             <p className="text-sm text-gray-500 dark:text-gray-400">{t("calendar.loadingCalendar")}</p>
           </div>
         </div>

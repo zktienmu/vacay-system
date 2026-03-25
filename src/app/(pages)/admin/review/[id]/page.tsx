@@ -81,7 +81,7 @@ export default function ReviewDetailPage() {
           </p>
           <Link
             href="/dashboard"
-            className="mt-4 inline-block text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            className="mt-4 inline-block text-accent hover:text-accent-hover"
           >
             {t("common.goToDashboard")}
           </Link>
@@ -121,7 +121,7 @@ export default function ReviewDetailPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500 dark:border-gray-700 dark:border-t-blue-400" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-accent dark:border-gray-700 dark:border-t-accent" />
       </div>
     );
   }
@@ -134,7 +134,7 @@ export default function ReviewDetailPage() {
           <p className="mt-2 text-gray-500 dark:text-gray-400">{error || t("review.notFoundDesc")}</p>
           <Link
             href="/admin"
-            className="mt-4 inline-block text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            className="mt-4 inline-block text-accent hover:text-accent-hover"
           >
             {t("review.backToReview")}
           </Link>
@@ -240,12 +240,12 @@ export default function ReviewDetailPage() {
               <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 {locale === "zh-TW" ? "交接事項" : "Handover"}
               </div>
-              <div className="col-span-2 text-sm text-blue-600 dark:text-blue-400">
+              <div className="col-span-2 text-sm text-accent">
                 <a
                   href={request.handover_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline hover:text-blue-800 dark:hover:text-blue-300"
+                  className="underline hover:text-accent-hover"
                 >
                   {request.handover_url}
                 </a>

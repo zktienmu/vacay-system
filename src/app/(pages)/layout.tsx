@@ -41,7 +41,7 @@ export default function PagesLayout({
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500 dark:border-gray-700 dark:border-t-blue-400" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-accent dark:border-gray-700 dark:border-t-accent" />
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("common.loading")}</p>
         </div>
       </div>
@@ -52,7 +52,7 @@ export default function PagesLayout({
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500 dark:border-gray-700 dark:border-t-blue-400" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-accent dark:border-gray-700 dark:border-t-accent" />
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("common.loading")}</p>
         </div>
       </div>
@@ -60,7 +60,7 @@ export default function PagesLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-[#F7F7F8] dark:bg-[#0A0A0A]">
       <Navbar />
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}

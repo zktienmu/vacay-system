@@ -56,7 +56,7 @@ export default function HolidaysPage() {
           </p>
           <Link
             href="/dashboard"
-            className="mt-4 inline-block text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            className="mt-4 inline-block text-accent hover:text-accent-hover"
           >
             {t("common.goToDashboard")}
           </Link>
@@ -130,7 +130,7 @@ export default function HolidaysPage() {
           <select
             value={yearFilter}
             onChange={(e) => setYearFilter(parseInt(e.target.value))}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           >
             {[2025, 2026, 2027].map((y) => (
               <option key={y} value={y}>
@@ -140,7 +140,7 @@ export default function HolidaysPage() {
           </select>
           <button
             onClick={() => setShowAdd(!showAdd)}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+            className="inline-flex items-center justify-center gap-2 bg-accent px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover"
           >
             <svg
               className="h-4 w-4"
@@ -181,7 +181,7 @@ export default function HolidaysPage() {
                 onChange={(e) =>
                   setAddForm((f) => ({ ...f, date: e.target.value }))
                 }
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               />
             </div>
             <div>
@@ -196,7 +196,7 @@ export default function HolidaysPage() {
                   setAddForm((f) => ({ ...f, name: e.target.value }))
                 }
                 placeholder={t("holidays.holidayNamePlaceholder")}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               />
             </div>
             <div>
@@ -210,7 +210,7 @@ export default function HolidaysPage() {
                   setAddForm((f) => ({ ...f, description: e.target.value }))
                 }
                 placeholder={t("holidays.optionalDescription")}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               />
             </div>
           </div>
@@ -232,7 +232,7 @@ export default function HolidaysPage() {
             <button
               type="submit"
               disabled={addLoading}
-              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50 dark:bg-blue-600 dark:hover:bg-blue-700"
+              className="bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
             >
               {addLoading ? t("holidays.adding") : t("holidays.addHoliday")}
             </button>

@@ -45,10 +45,14 @@ export default function RootLayout({
   return (
     <html lang="zh-TW" suppressHydrationWarning>
       <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap"
+          rel="stylesheet"
+        />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-[#0A0A0A] dark:bg-[#0A0A0A] dark:text-[#FAFAFA]`}
       >
         <ErrorBoundary>
           <Providers>{children}</Providers>

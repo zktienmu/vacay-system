@@ -445,7 +445,7 @@ export default function NewLeavePage() {
                 onLeave
                   ? "cursor-not-allowed bg-gray-100 opacity-50 dark:bg-gray-700"
                   : checked
-                    ? "cursor-pointer bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                    ? "cursor-pointer bg-orange-50 text-accent dark:bg-orange-900/20 dark:text-accent"
                     : "cursor-pointer text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
               }`}
             >
@@ -454,7 +454,7 @@ export default function NewLeavePage() {
                 checked={checked}
                 disabled={onLeave}
                 onChange={() => toggleDelegate(c.id)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500/20 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-700"
+                className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-[#FF5C00]/20 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-700"
               />
               <span>{c.name}</span>
               {onLeave && (
@@ -533,7 +533,7 @@ export default function NewLeavePage() {
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleMatrixCell(c.id, date)}
-                            className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700"
+                            className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-[#FF5C00]/20 dark:border-gray-600 dark:bg-gray-700"
                           />
                         )}
                       </td>
@@ -603,7 +603,7 @@ export default function NewLeavePage() {
                       ? "請填寫交接事項..."
                       : "Enter handover notes..."
                   }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
                 />
               </div>
             );
@@ -648,7 +648,7 @@ export default function NewLeavePage() {
                       ? "選填備註..."
                       : "Optional notes..."
                   }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
                 />
               </div>
             );
@@ -681,7 +681,7 @@ export default function NewLeavePage() {
           <select
             value={leaveType}
             onChange={(e) => setLeaveType(e.target.value as LeaveType)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           >
             {LEAVE_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -698,7 +698,7 @@ export default function NewLeavePage() {
                   : `${currentBalance.remaining_days} / ${currentBalance.total_days} ${t("leave.daysRemaining")}`}
               </p>
               {hasTransition && (
-                <p className="text-xs text-blue-600 dark:text-blue-400">
+                <p className="text-xs text-accent">
                   {locale === "zh-TW"
                     ? `過渡期：${transitionRemaining} / ${currentBalance.transition_days} 天`
                     : `Transition: ${transitionRemaining} / ${currentBalance.transition_days} days`}
@@ -727,7 +727,7 @@ export default function NewLeavePage() {
                 setDelegateMatrix({});
                 setDelegateNotes({});
               }}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
           </div>
           <div>
@@ -744,29 +744,29 @@ export default function NewLeavePage() {
                 setDelegateMatrix({});
                 setDelegateNotes({});
               }}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
           </div>
         </div>
 
         {/* Working days calculation */}
-        <div className={`rounded-lg p-4 ${startDate && endDate && workingDays > 0 ? "bg-blue-50 dark:bg-blue-900/20" : "bg-gray-50 dark:bg-gray-700/50"}`}>
+        <div className={`p-4 ${startDate && endDate && workingDays > 0 ? "bg-orange-50 dark:bg-orange-900/10" : "bg-gray-50 dark:bg-gray-700/50"}`}>
           <div className="flex items-center justify-between">
-            <span className={`text-sm font-medium ${startDate && endDate && workingDays > 0 ? "text-blue-700 dark:text-blue-300" : "text-gray-500 dark:text-gray-400"}`}>
+            <span className={`text-sm font-medium ${startDate && endDate && workingDays > 0 ? "text-accent" : "text-gray-500 dark:text-gray-400"}`}>
               {t("leave.workingDays")}
             </span>
-            <span className={`text-lg font-bold ${startDate && endDate && workingDays > 0 ? "text-blue-900 dark:text-blue-100" : "text-gray-400 dark:text-gray-500"}`}>
+            <span className={`text-lg font-bold ${startDate && endDate && workingDays > 0 ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"}`}>
               {startDate && endDate ? formatDays(workingDays) : "\u2014"}
             </span>
           </div>
           {remainingAfter !== null && startDate && endDate && (
             <div className="mt-1 flex items-center justify-between">
-              <span className="text-sm text-blue-600 dark:text-blue-400">
+              <span className="text-sm text-accent">
                 {t("leave.remainingAfter")}
               </span>
               <span
                 className={`text-sm font-semibold ${
-                  remainingAfter < 0 ? "text-red-600 dark:text-red-400" : "text-blue-900 dark:text-blue-100"
+                  remainingAfter < 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"
                 }`}
               >
                 {formatDays(remainingAfter)}
@@ -784,7 +784,7 @@ export default function NewLeavePage() {
           <div className={`rounded-lg border px-3 py-2.5 ${
             selectedDelegateIds.length === 0
               ? "border-gray-300 dark:border-gray-600"
-              : "border-blue-400 dark:border-blue-500"
+              : "border-accent"
           }`}>
             {delegatesLoading ? (
               <p className="text-sm text-gray-400 dark:text-gray-500">
@@ -870,7 +870,7 @@ export default function NewLeavePage() {
                                 [duty.original_leave_id]: e.target.value,
                               }))
                             }
-                            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                           >
                             <option value="">
                               {locale === "zh-TW" ? "-- 請選擇 --" : "-- Select --"}
@@ -908,7 +908,7 @@ export default function NewLeavePage() {
             value={handoverUrl}
             onChange={(e) => setHandoverUrl(e.target.value)}
             placeholder="https://..."
-            className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:bg-gray-700 dark:text-gray-100 ${
+            className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:bg-gray-700 dark:text-gray-100 ${
               handoverRequired && !handoverUrl.trim()
                 ? "border-red-400 dark:border-red-500"
                 : "border-gray-300 dark:border-gray-600"
@@ -935,7 +935,7 @@ export default function NewLeavePage() {
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder={t("leave.notesPlaceholder")}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
           />
         </div>
 
@@ -969,7 +969,7 @@ export default function NewLeavePage() {
           <button
             type="submit"
             disabled={!canSubmit}
-            className="rounded-lg bg-blue-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="bg-accent px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? (
               <span className="flex items-center gap-2">

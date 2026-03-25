@@ -102,7 +102,8 @@ export default function Navbar() {
               <div className="flex items-center">
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100"
+                  className="flex items-center gap-2 text-xl text-gray-900 dark:text-gray-100"
+                  style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
                 >
                   Dinngo 請假系統
                 </Link>
@@ -116,7 +117,7 @@ export default function Navbar() {
                     href={link.href}
                     className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                       isActive(link.href)
-                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                        ? "bg-orange-50 text-accent dark:bg-orange-900/20 dark:text-accent"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                     }`}
                   >
@@ -156,7 +157,7 @@ export default function Navbar() {
                         className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                           isAdmin
                             ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
-                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                            : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                         }`}
                       >
                         {session.role}
@@ -200,7 +201,7 @@ export default function Navbar() {
                     href={link.href}
                     className={`block rounded-lg px-3 py-2 text-base font-medium ${
                       isActive(link.href)
-                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                        ? "bg-orange-50 text-accent dark:bg-orange-900/20 dark:text-accent"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                     }`}
                   >
@@ -237,7 +238,7 @@ export default function Navbar() {
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           isAdmin
                             ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
-                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                            : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                         }`}
                       >
                         {session.role}

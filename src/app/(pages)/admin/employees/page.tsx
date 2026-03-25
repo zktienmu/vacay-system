@@ -103,7 +103,7 @@ export default function EmployeesPage() {
           </p>
           <Link
             href="/dashboard"
-            className="mt-4 inline-block text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            className="mt-4 inline-block text-accent hover:text-accent-hover"
           >
             {t("common.goToDashboard")}
           </Link>
@@ -321,7 +321,7 @@ export default function EmployeesPage() {
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600"
+            className="inline-flex items-center justify-center gap-2 bg-accent px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover"
           >
             <svg
               className="h-4 w-4"
@@ -471,7 +471,7 @@ export default function EmployeesPage() {
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                       emp.role === "admin"
                         ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
-                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                        : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                     }`}
                   >
                     {emp.role}
@@ -492,7 +492,7 @@ export default function EmployeesPage() {
                   {/* Edit button */}
                   <button
                     onClick={(e) => { e.stopPropagation(); openEditModal(emp); }}
-                    className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                    className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-accent dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-accent"
                     title={locale === "zh-TW" ? "編輯" : "Edit"}
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -538,7 +538,7 @@ export default function EmployeesPage() {
                 <div className="border-t border-gray-100 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900/50">
                   {policiesLoading ? (
                     <div className="flex items-center justify-center py-4">
-                      <div className="h-6 w-6 animate-spin rounded-full border-3 border-gray-200 border-t-blue-500 dark:border-gray-700 dark:border-t-blue-400" />
+                      <div className="h-6 w-6 animate-spin rounded-full border-3 border-gray-200 border-t-accent dark:border-gray-700 dark:border-t-accent" />
                     </div>
                   ) : (
                     <div>
@@ -567,7 +567,7 @@ export default function EmployeesPage() {
                                     }))
                                   }
                                   disabled={isUnlimited}
-                                  className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:opacity-40 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                  className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none disabled:opacity-40 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                 />
                               ) : (
                                 <span className="w-20 rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-center text-sm font-medium text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300">
@@ -613,7 +613,7 @@ export default function EmployeesPage() {
                         <button
                           onClick={() => savePolicies(emp.id)}
                           disabled={policySaving}
-                          className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+                          className="bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
                         >
                           {policySaving ? t("employees.saving") : t("employees.savePolicies")}
                         </button>
@@ -677,7 +677,7 @@ export default function EmployeesPage() {
                         onChange={(e) =>
                           setAddForm((f) => ({ ...f, name: e.target.value }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                         placeholder={t("employees.namePlaceholder")}
                       />
                     </div>
@@ -696,7 +696,7 @@ export default function EmployeesPage() {
                             wallet_address: e.target.value,
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                         placeholder="0x..."
                       />
                     </div>
@@ -713,7 +713,7 @@ export default function EmployeesPage() {
                             role: e.target.value as "admin" | "employee",
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       >
                         <option value="employee">{t("employees.roleEmployee")}</option>
                         <option value="admin">{t("employees.roleAdmin")}</option>
@@ -732,7 +732,7 @@ export default function EmployeesPage() {
                             department: e.target.value as "engineering" | "admin",
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       >
                         <option value="engineering">{locale === "zh-TW" ? "工程" : "Engineering"}</option>
                         <option value="admin">{locale === "zh-TW" ? "行政" : "Admin"}</option>
@@ -750,7 +750,7 @@ export default function EmployeesPage() {
                             is_manager: e.target.checked,
                           }))
                         }
-                        className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700"
+                        className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-[#FF5C00]/20 dark:border-gray-600 dark:bg-gray-700"
                       />
                       <label htmlFor="is_manager" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {locale === "zh-TW" ? "部門主管" : "Department Manager"}
@@ -771,7 +771,7 @@ export default function EmployeesPage() {
                             start_date: e.target.value,
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                     </div>
 
@@ -792,7 +792,7 @@ export default function EmployeesPage() {
                       <button
                         type="submit"
                         disabled={addLoading}
-                        className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+                        className="bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
                       >
                         {addLoading ? t("employees.adding") : t("employees.addEmployee")}
                       </button>
@@ -855,7 +855,7 @@ export default function EmployeesPage() {
                         onChange={(e) =>
                           setEditForm((f) => ({ ...f, name: e.target.value }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                     </div>
 
@@ -873,7 +873,7 @@ export default function EmployeesPage() {
                             wallet_address: e.target.value,
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                     </div>
 
@@ -890,7 +890,7 @@ export default function EmployeesPage() {
                             slack_user_id: e.target.value,
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                         placeholder="U0XXXXXXXX"
                       />
                     </div>
@@ -907,7 +907,7 @@ export default function EmployeesPage() {
                             role: e.target.value as "admin" | "employee",
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       >
                         <option value="employee">{t("employees.roleEmployee")}</option>
                         <option value="admin">{t("employees.roleAdmin")}</option>
@@ -926,7 +926,7 @@ export default function EmployeesPage() {
                             department: e.target.value as "engineering" | "admin",
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       >
                         <option value="engineering">{locale === "zh-TW" ? "工程" : "Engineering"}</option>
                         <option value="admin">{locale === "zh-TW" ? "行政" : "Admin"}</option>
@@ -944,7 +944,7 @@ export default function EmployeesPage() {
                             is_manager: e.target.checked,
                           }))
                         }
-                        className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700"
+                        className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-[#FF5C00]/20 dark:border-gray-600 dark:bg-gray-700"
                       />
                       <label htmlFor="edit_is_manager" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {locale === "zh-TW" ? "部門主管" : "Department Manager"}
@@ -965,7 +965,7 @@ export default function EmployeesPage() {
                             start_date: e.target.value,
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                       />
                     </div>
 
@@ -986,7 +986,7 @@ export default function EmployeesPage() {
                       <button
                         type="submit"
                         disabled={editLoading}
-                        className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+                        className="bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
                       >
                         {editLoading
                           ? (locale === "zh-TW" ? "儲存中..." : "Saving...")

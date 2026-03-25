@@ -141,7 +141,7 @@ export default function TransitionPage() {
           </p>
           <Link
             href="/dashboard"
-            className="mt-4 inline-block text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            className="mt-4 inline-block text-accent hover:text-accent-hover"
           >
             {t("common.goToDashboard")}
           </Link>
@@ -340,7 +340,7 @@ export default function TransitionPage() {
                 key={emp.id}
                 className={`overflow-hidden rounded-xl border bg-white transition-colors dark:bg-gray-800 ${
                   isExpanded
-                    ? "border-blue-200 dark:border-blue-800"
+                    ? "border-accent/30 dark:border-accent/30"
                     : "border-gray-200 dark:border-gray-700"
                 }`}
               >
@@ -399,25 +399,25 @@ export default function TransitionPage() {
                   <div className="border-t border-gray-100 bg-gray-50/80 px-5 py-5 dark:border-gray-700 dark:bg-gray-900/50">
                     {dataLoading ? (
                       <div className="flex items-center justify-center py-8">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-blue-500 dark:border-gray-700 dark:border-t-blue-400" />
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-accent dark:border-gray-700 dark:border-t-accent" />
                       </div>
                     ) : (
                       <div className="space-y-5">
                         {/* Anniversary period banner */}
                         {period && (
-                          <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 dark:border-blue-900/50 dark:bg-blue-900/20">
+                          <div className="rounded-lg border border-orange-100 bg-orange-50 px-4 py-3 dark:border-orange-900/50 dark:bg-orange-900/20">
                             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                               <div>
-                                <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                                <p className="text-xs font-medium text-accent">
                                   {locale === "zh-TW"
                                     ? "過渡期間"
                                     : "Transition Period"}
                                 </p>
-                                <p className="mt-0.5 text-sm font-semibold text-blue-900 dark:text-blue-100">
+                                <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100">
                                   {period.periodStart} ~ {period.periodEnd}
                                 </p>
                               </div>
-                              <p className="text-xs text-blue-500 dark:text-blue-400">
+                              <p className="text-xs text-accent">
                                 {locale === "zh-TW"
                                   ? "只需補登此區間內的紀錄"
                                   : "Only backfill within this period"}
@@ -476,7 +476,7 @@ export default function TransitionPage() {
                                         );
                                       }, 300);
                                     }}
-                                    className="w-20 rounded-lg border border-gray-300 px-3 py-1.5 text-center text-sm tabular-nums text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                    className="w-20 rounded-lg border border-gray-300 px-3 py-1.5 text-center text-sm tabular-nums text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                     placeholder="—"
                                   />
                                   <span className="text-sm text-gray-500 dark:text-gray-400">
@@ -807,7 +807,7 @@ export default function TransitionPage() {
                                       leave_type: e.target.value as LeaveType,
                                     }))
                                   }
-                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                 >
                                   {LEAVE_TYPES.map((type) => (
                                     <option key={type} value={type}>
@@ -834,7 +834,7 @@ export default function TransitionPage() {
                                       start_date: e.target.value,
                                     }))
                                   }
-                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                 />
                               </div>
                               <div>
@@ -856,7 +856,7 @@ export default function TransitionPage() {
                                       end_date: e.target.value,
                                     }))
                                   }
-                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                 />
                               </div>
                               <div>
@@ -877,7 +877,7 @@ export default function TransitionPage() {
                                       ? "選填"
                                       : "Optional"
                                   }
-                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                 />
                               </div>
                             </div>

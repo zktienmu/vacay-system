@@ -225,7 +225,7 @@ export default function DashboardPage() {
                       <div className="grid grid-cols-3 gap-2">
                         <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{locale === "zh-TW" ? "交接事項" : "Handover"}</span>
                         <span className="col-span-2 text-sm">
-                          <a href={req.handover_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">{req.handover_url}</a>
+                          <a href={req.handover_url} target="_blank" rel="noopener noreferrer" className="text-accent underline hover:text-accent-hover">{req.handover_url}</a>
                         </span>
                       </div>
                     )}
@@ -234,7 +234,7 @@ export default function DashboardPage() {
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{locale === "zh-TW" ? "時間軸" : "Timeline"}</span>
                       <div className="col-span-2 space-y-2">
                         <div className="flex items-start gap-3">
-                          <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500"></div>
+                          <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent"></div>
                           <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(req.created_at, "yyyy/MM/dd HH:mm")}</p>
                             <p className="text-sm text-gray-900 dark:text-gray-100">{locale === "zh-TW" ? "提出申請" : "Submitted"}</p>
@@ -290,7 +290,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/leave/new"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-600"
+          className="inline-flex items-center justify-center gap-2 bg-accent px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover"
         >
           <svg
             className="h-4 w-4"
@@ -434,7 +434,7 @@ export default function DashboardPage() {
                               {locale === "zh-TW" ? "交接文件" : "Handover doc"}
                             </span>
                             <span className="col-span-2 text-sm">
-                              <a href={leave.handover_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                              <a href={leave.handover_url} target="_blank" rel="noopener noreferrer" className="text-accent underline hover:text-accent-hover">
                                 {leave.handover_url}
                               </a>
                             </span>
@@ -483,7 +483,7 @@ export default function DashboardPage() {
             {t("dashboard.noRequests")}{" "}
             <Link
               href="/leave/new"
-              className="text-blue-500 underline hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+              className="text-accent underline hover:text-accent-hover"
             >
               {t("dashboard.createFirst")}
             </Link>

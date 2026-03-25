@@ -42,7 +42,7 @@ export default function BalanceCard({ balance }: { balance: LeaveBalance }) {
   // 無限制假別：大字顯示已使用天數，不顯示進度條
   if (isUnlimited) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+      <div className="border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-[#27272A] dark:bg-[#18181B]">
         <div className="mb-2 flex items-center gap-2">
           <span className="text-xl">{emoji}</span>
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -53,7 +53,7 @@ export default function BalanceCard({ balance }: { balance: LeaveBalance }) {
           <span className="text-lg font-bold">
             {locale === "zh-TW" ? "已經使用" : "Used"}
           </span>
-          <span className="text-5xl font-extrabold tracking-tight">
+          <span className="text-5xl tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
             {used_days}
           </span>
           <span className="text-lg font-bold">
@@ -65,7 +65,7 @@ export default function BalanceCard({ balance }: { balance: LeaveBalance }) {
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+    <div className="border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-[#27272A] dark:bg-[#18181B]">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xl">{emoji}</span>
@@ -73,7 +73,7 @@ export default function BalanceCard({ balance }: { balance: LeaveBalance }) {
             {label}
           </h3>
         </div>
-        <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <span className="text-2xl text-gray-900 dark:text-gray-100" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
           {totalRemaining}
         </span>
       </div>
@@ -85,7 +85,7 @@ export default function BalanceCard({ balance }: { balance: LeaveBalance }) {
               ? `正式週期：已用 ${used_days} / 共 ${total_days} 天`
               : `Formal: ${used_days} used / ${total_days} total`}
           </p>
-          <p className="text-xs text-blue-600 dark:text-blue-400">
+          <p className="text-xs text-accent">
             {locale === "zh-TW"
               ? `過渡期：已用 ${transition_used_days} / 共 ${transition_days} 天`
               : `Transition: ${transition_used_days} used / ${transition_days} total`}
@@ -99,9 +99,9 @@ export default function BalanceCard({ balance }: { balance: LeaveBalance }) {
         </p>
       )}
 
-      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+      <div className="progress-bar-keep-radius h-2 w-full overflow-hidden bg-gray-100 dark:bg-gray-700">
         <div
-          className={`h-full rounded-full transition-all ${barColor}`}
+          className={`progress-bar-keep-radius h-full transition-all ${barColor}`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
       </div>

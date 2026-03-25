@@ -131,16 +131,16 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500 dark:border-gray-700 dark:border-t-blue-400" />
+      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-[#0A0A0A]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-accent dark:border-gray-700 dark:border-t-accent" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4 dark:bg-[#0A0A0A]">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        <div className="border border-gray-200 bg-white p-8 shadow-lg dark:border-[#27272A] dark:bg-[#18181B]">
           {/* Logo */}
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
@@ -155,8 +155,8 @@ export default function LoginPage() {
 
             {/* Status messages */}
             {stepMessage && (
-              <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-500 dark:border-blue-700 dark:border-t-blue-400" />
+              <div className="flex items-center gap-2 text-sm text-accent">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-orange-200 border-t-accent dark:border-orange-800 dark:border-t-accent" />
                 {stepMessage}
               </div>
             )}
@@ -174,7 +174,7 @@ export default function LoginPage() {
                 onClick={() => {
                   setHasTriedSiwe(false);
                 }}
-                className="rounded-lg bg-blue-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                className="bg-accent px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
               >
                 {t("login.signIn")}
               </button>
@@ -186,7 +186,7 @@ export default function LoginPage() {
                   setError(null);
                   setHasTriedSiwe(false);
                 }}
-                className="rounded-lg bg-blue-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                className="bg-accent px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
               >
                 {t("login.tryAgain")}
               </button>

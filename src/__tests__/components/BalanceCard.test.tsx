@@ -71,7 +71,7 @@ describe('BalanceCard', () => {
   it('renders a progress bar with correct width', () => {
     const { container } = renderWithProviders(<BalanceCard balance={defaultBalance} />)
     // The progress bar has a specific style width
-    const progressBar = container.querySelector('[style]')
+    const progressBar = container.querySelector('[style*="width"]')
     expect(progressBar).toBeInTheDocument()
     // 5/20 = 25%
     expect(progressBar?.getAttribute('style')).toContain('25%')
@@ -85,7 +85,7 @@ describe('BalanceCard', () => {
       remaining_days: -5,
     }
     const { container } = renderWithProviders(<BalanceCard balance={overusedBalance} />)
-    const progressBar = container.querySelector('[style]')
+    const progressBar = container.querySelector('[style*="width"]')
     expect(progressBar?.getAttribute('style')).toContain('100%')
   })
 
@@ -97,14 +97,14 @@ describe('BalanceCard', () => {
       remaining_days: 0,
     }
     const { container } = renderWithProviders(<BalanceCard balance={emptyBalance} />)
-    const progressBar = container.querySelector('[style]')
+    const progressBar = container.querySelector('[style*="width"]')
     expect(progressBar?.getAttribute('style')).toContain('0%')
   })
 
   it('applies green color to progress bar when usage is low (< 50%)', () => {
     const { container } = renderWithProviders(<BalanceCard balance={defaultBalance} />)
     // 5/20 = 25%, which is < 50%, so green
-    const progressBar = container.querySelector('[style]')
+    const progressBar = container.querySelector('[style*="width"]')
     expect(progressBar?.className).toContain('bg-green-500')
   })
 
@@ -116,7 +116,7 @@ describe('BalanceCard', () => {
       remaining_days: 8,
     }
     const { container } = renderWithProviders(<BalanceCard balance={mediumBalance} />)
-    const progressBar = container.querySelector('[style]')
+    const progressBar = container.querySelector('[style*="width"]')
     // 12/20 = 60%, which is >= 50% and < 80%, so yellow
     expect(progressBar?.className).toContain('bg-yellow-500')
   })
@@ -129,7 +129,7 @@ describe('BalanceCard', () => {
       remaining_days: 2,
     }
     const { container } = renderWithProviders(<BalanceCard balance={highBalance} />)
-    const progressBar = container.querySelector('[style]')
+    const progressBar = container.querySelector('[style*="width"]')
     // 18/20 = 90%, which is >= 80%, so red
     expect(progressBar?.className).toContain('bg-red-500')
   })
@@ -142,7 +142,7 @@ describe('BalanceCard', () => {
       remaining_days: 0,
     }
     const { container } = renderWithProviders(<BalanceCard balance={zeroBalance} />)
-    const progressBar = container.querySelector('[style]')
+    const progressBar = container.querySelector('[style*="width"]')
     expect(progressBar?.className).toContain('bg-gray-300')
   })
 })
