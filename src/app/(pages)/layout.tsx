@@ -17,9 +17,13 @@ export default function PagesLayout({
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace("/login");
+      // Clear the invalid session cookie before redirecting,
+      // otherwise proxy.ts sees the cookie and bounces back to dashboard
+      fetch("/api/auth/logout", { method: "POST" }).finally(() => {
+        window.location.href = "/login";
+      });
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated]);
 
   if (isLoading) {
     return (
