@@ -193,6 +193,8 @@ export async function getLeaveRequests(filters: {
     delegate_assignments: [],
     chain_delegations: [],
     serial_number: null,
+    start_time: null,
+    end_time: null,
     ...r,
   })) as unknown as LeaveRequest[];
 }
@@ -211,7 +213,7 @@ export async function getLeaveRequestById(
     throw error;
   }
 
-  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], serial_number: null, ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], serial_number: null, start_time: null, end_time: null, ...data } as LeaveRequest;
 }
 
 export async function createLeaveRequest(
@@ -256,7 +258,7 @@ export async function createLeaveRequest(
     .single();
 
   if (error) throw error;
-  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], serial_number: null, ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], serial_number: null, start_time: null, end_time: null, ...data } as LeaveRequest;
 }
 
 export async function updateLeaveRequest(
@@ -271,7 +273,7 @@ export async function updateLeaveRequest(
     .single();
 
   if (error) throw error;
-  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], serial_number: null, ...data } as LeaveRequest;
+  return { delegate_ids: [], delegate_assignments: [], chain_delegations: [], serial_number: null, start_time: null, end_time: null, ...data } as LeaveRequest;
 }
 
 export async function getApprovedDaysInPeriod(
@@ -392,6 +394,8 @@ export async function getActiveDelegateDuties(
     delegate_assignments: [],
     chain_delegations: [],
     serial_number: null,
+    start_time: null,
+    end_time: null,
     ...r,
   })) as unknown as LeaveRequest[];
 }

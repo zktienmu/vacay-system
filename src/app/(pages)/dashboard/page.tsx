@@ -189,6 +189,15 @@ export default function DashboardPage() {
                         <span className="col-span-2 text-sm font-mono text-gray-900 dark:text-gray-100">{req.serial_number}</span>
                       </div>
                     )}
+                    {req.start_time && req.end_time && (
+                      <div className="grid grid-cols-3 gap-2">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{locale === "zh-TW" ? "時段" : "Time"}</span>
+                        <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
+                          {formatDate(req.start_date, "yyyy/MM/dd")} {req.start_time} - {req.end_time}{" "}
+                          ({req.days} {locale === "zh-TW" ? "天" : "day(s)"} / {(() => { const [sh, sm] = req.start_time!.split(":").map(Number); const [eh, em] = req.end_time!.split(":").map(Number); return (eh * 60 + em - (sh * 60 + sm)) / 60; })()} {locale === "zh-TW" ? "小時" : "hour(s)"})
+                        </span>
+                      </div>
+                    )}
                     <div className="grid grid-cols-3 gap-2">
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{locale === "zh-TW" ? "代理人" : "Delegates"}</span>
                       <div className="col-span-2">

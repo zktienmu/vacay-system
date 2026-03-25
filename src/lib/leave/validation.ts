@@ -4,7 +4,6 @@ const leaveTypes = [
   "annual",
   "personal",
   "sick",
-  "official",
   "unpaid",
   "remote",
   "family_care",
@@ -53,6 +52,8 @@ export const createLeaveRequestSchema = z
     })).optional().default([]),
     handover_url: z.string().url().nullable().optional(),
     notes: z.string().max(1000).nullable().optional(),
+    start_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+    end_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
     for_employee_id: z.string().uuid().optional(),
   })
   .refine(

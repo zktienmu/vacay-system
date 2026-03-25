@@ -25,10 +25,16 @@ const LEAVE_TYPES: LeaveType[] = [
   "annual",
   "personal",
   "sick",
-  "official",
   "unpaid",
   "remote",
+  "family_care",
+  "menstrual",
 ];
+
+const LEAVE_TYPE_POLICY_LABELS: Partial<Record<LeaveType, { "zh-TW": string; en: string }>> = {
+  family_care: { "zh-TW": "家庭照顧假（天/14天上限）", en: "Family Care (days / 14-day cap)" },
+  menstrual: { "zh-TW": "生理假（天/月）", en: "Menstrual (days/month)" },
+};
 
 function truncateAddress(addr: string): string {
   if (addr.length <= 12) return addr;
@@ -551,8 +557,10 @@ export default function EmployeesPage() {
                           const isAnnual = type === "annual";
                           return (
                             <div key={type} className="flex items-center gap-2">
-                              <label className="w-20 text-sm text-gray-600 dark:text-gray-400">
-                                {t(`leave.types.${type}` as `leave.types.${LeaveType}`)}
+                              <label className="w-28 shrink-0 text-sm text-gray-600 dark:text-gray-400">
+                                {LEAVE_TYPE_POLICY_LABELS[type]
+                                  ? LEAVE_TYPE_POLICY_LABELS[type]![locale === "zh-TW" ? "zh-TW" : "en"]
+                                  : t(`leave.types.${type}` as `leave.types.${LeaveType}`)}
                               </label>
                               {isAnnual || !isUnlimited ? (
                                 <input

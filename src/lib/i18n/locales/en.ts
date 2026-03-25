@@ -56,7 +56,6 @@ const en = {
       annual: "Annual",
       personal: "Personal",
       sick: "Sick",
-      official: "Official",
       unpaid: "Unpaid",
       remote: "Remote",
       family_care: "Family Care",

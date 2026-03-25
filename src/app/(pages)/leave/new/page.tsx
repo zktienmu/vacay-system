@@ -21,12 +21,32 @@ const LEAVE_TYPES: LeaveType[] = [
   "annual",
   "personal",
   "sick",
-  "official",
   "unpaid",
   "remote",
   "family_care",
   "menstrual",
 ];
+
+/** Generate 30-min interval time options */
+function generateTimeOptions(startHour = 9, endHour = 18): string[] {
+  const options: string[] = [];
+  for (let h = startHour; h <= endHour; h++) {
+    options.push(`${String(h).padStart(2, "0")}:00`);
+    if (h < endHour) {
+      options.push(`${String(h).padStart(2, "0")}:30`);
+    }
+  }
+  return options;
+}
+
+const TIME_OPTIONS = generateTimeOptions();
+const END_TIME_OPTIONS = generateTimeOptions(9, 18).filter((t) => t !== "09:00"); // end must be after 09:00
+
+function calculateHoursFromTimes(start: string, end: string): number {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  return (eh * 60 + em - (sh * 60 + sm)) / 60;
+}
 
 /** Day-of-week abbreviations for column headers */
 const DAY_LABELS_ZH = ["日", "一", "二", "三", "四", "五", "六"];
@@ -87,6 +107,8 @@ export default function NewLeavePage() {
   const [leaveType, setLeaveType] = useState<LeaveType>("annual");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("18:00");
   // Matrix state: { delegateId -> Set<dateString> }
   const [delegateMatrix, setDelegateMatrix] = useState<Record<string, Set<string>>>({});
   // Per-delegate handover notes
@@ -106,6 +128,17 @@ export default function NewLeavePage() {
     [startDate, endDate]
   );
 
+  // Family care: same-day time-based calculation
+  const isFamilyCareHourly = leaveType === "family_care" && startDate && endDate && startDate === endDate;
+  const familyCareHours = useMemo(() => {
+    if (!isFamilyCareHourly) return 0;
+    return calculateHoursFromTimes(startTime, endTime);
+  }, [isFamilyCareHourly, startTime, endTime]);
+  const familyCareDays = isFamilyCareHourly ? Math.round((familyCareHours / 8) * 10) / 10 : workingDays;
+
+  // Effective days for submission (family_care hourly overrides workingDays)
+  const effectiveDays = isFamilyCareHourly ? familyCareDays : workingDays;
+
   const currentBalance = balances.find((b) => b.leave_type === leaveType);
   const isUnlimited = currentBalance?.total_days === -1;
   const hasTransition = currentBalance?.transition_days != null && currentBalance?.transition_used_days != null;
@@ -115,7 +148,7 @@ export default function NewLeavePage() {
   const totalRemaining = (currentBalance?.remaining_days ?? 0) + transitionRemaining;
   const remainingAfter =
     currentBalance != null && !isUnlimited
-      ? totalRemaining - workingDays
+      ? totalRemaining - effectiveDays
       : null;
 
   // Use Slack users if available, otherwise fall back to employee list
@@ -374,7 +407,7 @@ export default function NewLeavePage() {
   }, [startDate, endDate, workingDays, remainingAfter, currentBalance, leaveType, t, locale, handoverRequired, handoverUrl, notes, selectedDelegateIds, allDatesCovered, delegateNotes, chainDuties, chainReassignments]);
 
   const canSubmit =
-    startDate && endDate && workingDays > 0 && validationErrors.length === 0 && !submitting &&
+    startDate && endDate && effectiveDays > 0 && validationErrors.length === 0 && !submitting &&
     (!handoverRequired || handoverUrl.trim() !== "") && (leaveType === "remote" || selectedDelegateIds.length > 0);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -413,6 +446,10 @@ export default function NewLeavePage() {
           }),
           handover_url: handoverUrl.trim() || null,
           notes: notes.trim() || null,
+          ...(isFamilyCareHourly && {
+            start_time: startTime,
+            end_time: endTime,
+          }),
         }),
       });
 
@@ -689,7 +726,11 @@ export default function NewLeavePage() {
           </label>
           <select
             value={leaveType}
-            onChange={(e) => setLeaveType(e.target.value as LeaveType)}
+            onChange={(e) => {
+              setLeaveType(e.target.value as LeaveType);
+              setStartTime("09:00");
+              setEndTime("18:00");
+            }}
             className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           >
             {LEAVE_TYPES.map((type) => (
@@ -758,19 +799,74 @@ export default function NewLeavePage() {
           </div>
         </div>
 
+        {/* Time picker for family_care same-day */}
+        {isFamilyCareHourly && (
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {locale === "zh-TW" ? "時段" : "Time Range"}
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">
+                  {locale === "zh-TW" ? "開始時間" : "Start Time"}
+                </label>
+                <select
+                  value={startTime}
+                  onChange={(e) => {
+                    setStartTime(e.target.value);
+                    // auto-bump end time if needed
+                    if (e.target.value >= endTime) {
+                      const idx = END_TIME_OPTIONS.findIndex((t) => t > e.target.value);
+                      if (idx >= 0) setEndTime(END_TIME_OPTIONS[idx]);
+                    }
+                  }}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                >
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">
+                  {locale === "zh-TW" ? "結束時間" : "End Time"}
+                </label>
+                <select
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-accent focus:ring-2 focus:ring-[#FF5C00]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                >
+                  {END_TIME_OPTIONS.filter((t) => t > startTime).map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {familyCareHours > 0 && (
+              <p className="mt-2 text-sm font-semibold text-accent">
+                {familyCareHours} {locale === "zh-TW" ? "小時" : "hour(s)"} ({familyCareDays} {locale === "zh-TW" ? "天" : "day(s)"})
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Working days calculation */}
-        <div className={`p-4 ${startDate && endDate && workingDays > 0 ? "bg-orange-50 dark:bg-orange-900/10" : "bg-gray-50 dark:bg-gray-700/50"}`}>
+        <div className={`p-4 ${startDate && endDate && effectiveDays > 0 ? "bg-orange-50 dark:bg-orange-900/10" : "bg-gray-50 dark:bg-gray-700/50"}`}>
           <div className="flex items-center justify-between">
-            <span className={`text-sm font-medium ${startDate && endDate && workingDays > 0 ? "text-accent" : "text-gray-500 dark:text-gray-400"}`}>
+            <span className={`text-sm font-medium ${startDate && endDate && effectiveDays > 0 ? "text-accent" : "text-gray-500 dark:text-gray-400"}`}>
               {t("leave.workingDays")}
             </span>
-            <span className={`text-lg font-bold ${startDate && endDate && workingDays > 0 ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"}`}>
-              {startDate && endDate ? formatDays(workingDays) : "\u2014"}
+            <span className={`text-lg font-bold ${startDate && endDate && effectiveDays > 0 ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"}`}>
+              {startDate && endDate
+                ? isFamilyCareHourly
+                  ? `${familyCareDays} ${locale === "zh-TW" ? "天" : "day(s)"}`
+                  : formatDays(workingDays)
+                : "\u2014"}
             </span>
           </div>
-          {leaveType === "family_care" && (
+          {leaveType === "family_care" && !isFamilyCareHourly && (
             <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-              {locale === "zh-TW" ? "(可以小時為單位)" : "(hourly units allowed)"}
+              {locale === "zh-TW" ? "(同一天可以小時為單位申請)" : "(same-day requests can use hourly units)"}
             </p>
           )}
           {remainingAfter !== null && startDate && endDate && (

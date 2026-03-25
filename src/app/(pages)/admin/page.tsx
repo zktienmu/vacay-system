@@ -279,8 +279,9 @@ export default function AdminReviewPage() {
                             {t("review.dates")}
                           </span>
                           <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
-                            {formatDate(req.end_date, "yyyy/MM/dd")}
+                            {req.start_time && req.end_time
+                              ? `${formatDate(req.start_date, "yyyy/MM/dd")} ${req.start_time} - ${req.end_time} (${req.days} ${locale === "zh-TW" ? "天" : "day(s)"} / ${(() => { const [sh, sm] = req.start_time!.split(":").map(Number); const [eh, em] = req.end_time!.split(":").map(Number); return (eh * 60 + em - (sh * 60 + sm)) / 60; })()} ${locale === "zh-TW" ? "小時" : "hour(s)"})`
+                              : `${formatDate(req.start_date, "yyyy/MM/dd")} - ${formatDate(req.end_date, "yyyy/MM/dd")}`}
                           </span>
                         </div>
 
@@ -539,8 +540,9 @@ export default function AdminReviewPage() {
                             {t("review.dates")}
                           </span>
                           <span className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-                            {formatDate(req.start_date, "yyyy/MM/dd")} -{" "}
-                            {formatDate(req.end_date, "yyyy/MM/dd")}
+                            {req.start_time && req.end_time
+                              ? `${formatDate(req.start_date, "yyyy/MM/dd")} ${req.start_time} - ${req.end_time} (${req.days} ${locale === "zh-TW" ? "天" : "day(s)"} / ${(() => { const [sh, sm] = req.start_time!.split(":").map(Number); const [eh, em] = req.end_time!.split(":").map(Number); return (eh * 60 + em - (sh * 60 + sm)) / 60; })()} ${locale === "zh-TW" ? "小時" : "hour(s)"})`
+                              : `${formatDate(req.start_date, "yyyy/MM/dd")} - ${formatDate(req.end_date, "yyyy/MM/dd")}`}
                           </span>
                         </div>
 

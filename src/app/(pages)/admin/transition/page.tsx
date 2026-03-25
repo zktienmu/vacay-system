@@ -20,9 +20,10 @@ const LEAVE_TYPES: LeaveType[] = [
   "annual",
   "personal",
   "sick",
-  "official",
   "unpaid",
   "remote",
+  "family_care",
+  "menstrual",
 ];
 
 // Transition period: from 2026/1/1 to the day before the next employment anniversary

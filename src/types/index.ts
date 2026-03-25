@@ -29,7 +29,6 @@ export type LeaveType =
   | "annual"
   | "personal"
   | "sick"
-  | "official"
   | "unpaid"
   | "remote"
   | "family_care"
@@ -70,6 +69,8 @@ export interface LeaveRequest {
   days: number;
   delegate_id: string | null;
   delegate_ids: string[];
+  start_time: string | null; // "09:00" format
+  end_time: string | null;   // "18:00" format
   delegate_assignments: DelegateAssignment[];
   chain_delegations: ChainDelegation[];
   handover_url: string | null;

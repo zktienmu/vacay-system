@@ -11,9 +11,10 @@ const ALL_LEAVE_TYPES: LeaveType[] = [
   "annual",
   "personal",
   "sick",
-  "official",
   "unpaid",
   "remote",
+  "family_care",
+  "menstrual",
 ];
 
 const balanceQuerySchema = z.object({

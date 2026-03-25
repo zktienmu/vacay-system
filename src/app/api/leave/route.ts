@@ -101,7 +101,7 @@ export const POST = withAuth(
         );
       }
 
-      const { leave_type, start_date, end_date, delegate_id, delegate_ids, delegate_assignments, chain_delegations, handover_url, notes, for_employee_id } =
+      const { leave_type, start_date, end_date, delegate_id, delegate_ids, delegate_assignments, chain_delegations, handover_url, notes, for_employee_id, start_time, end_time } =
         parsed.data;
 
       // Admin backfill: create leave on behalf of an employee
@@ -127,7 +127,16 @@ export const POST = withAuth(
         }
       }
 
-      const days = await calculateWorkingDaysExcludingHolidays(start_date, end_date);
+      let days = await calculateWorkingDaysExcludingHolidays(start_date, end_date);
+
+      // Family care: same-day with time range overrides days calculation
+      const isFamilyCareHourly = leave_type === "family_care" && start_date === end_date && start_time && end_time;
+      if (isFamilyCareHourly) {
+        const [sh, sm] = start_time.split(":").map(Number);
+        const [eh, em] = end_time.split(":").map(Number);
+        const hours = (eh * 60 + em - (sh * 60 + sm)) / 60;
+        days = Math.round((hours / 8) * 10) / 10;
+      }
 
       if (days === 0) {
         return NextResponse.json(
@@ -150,8 +159,8 @@ export const POST = withAuth(
         );
       }
 
-      // Check balance (skip for unpaid/official leave and admin backfill)
-      if (!isAdminBackfill && leave_type !== "unpaid" && leave_type !== "official") {
+      // Check balance (skip for unpaid leave and admin backfill)
+      if (!isAdminBackfill && leave_type !== "unpaid") {
         const employee = await getEmployeeById(targetEmployeeId);
         if (!employee) {
           return NextResponse.json(
@@ -235,6 +244,8 @@ export const POST = withAuth(
         start_date,
         end_date,
         days,
+        start_time: isFamilyCareHourly ? start_time! : null,
+        end_time: isFamilyCareHourly ? end_time! : null,
         delegate_id: resolvedDelegateIds[0] ?? null,
         delegate_ids: resolvedDelegateIds,
         delegate_assignments: delegate_assignments ?? [],

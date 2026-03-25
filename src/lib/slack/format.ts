@@ -7,7 +7,6 @@ const leaveTypeLabels: Record<LeaveType, string> = {
   annual: "特休",
   personal: "事假",
   sick: "病假",
-  official: "公假",
   unpaid: "無薪假",
   remote: "遠端工作",
   family_care: "家庭照顧假",

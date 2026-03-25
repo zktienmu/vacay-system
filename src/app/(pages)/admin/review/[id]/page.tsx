@@ -209,8 +209,9 @@ export default function ReviewDetailPage() {
           <div className="grid grid-cols-3 gap-4 border-b border-gray-100 pb-4 dark:border-gray-700">
             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("review.dates")}</div>
             <div className="col-span-2 text-sm text-gray-900 dark:text-gray-100">
-              {formatDate(request.start_date, "yyyy/MM/dd")} -{" "}
-              {formatDate(request.end_date, "yyyy/MM/dd")}
+              {request.start_time && request.end_time
+                ? `${formatDate(request.start_date, "yyyy/MM/dd")} ${request.start_time} - ${request.end_time} (${request.days} ${locale === "zh-TW" ? "天" : "day(s)"} / ${(() => { const [sh, sm] = request.start_time!.split(":").map(Number); const [eh, em] = request.end_time!.split(":").map(Number); return (eh * 60 + em - (sh * 60 + sm)) / 60; })()} ${locale === "zh-TW" ? "小時" : "hour(s)"})`
+                : `${formatDate(request.start_date, "yyyy/MM/dd")} - ${formatDate(request.end_date, "yyyy/MM/dd")}`}
             </div>
           </div>
 

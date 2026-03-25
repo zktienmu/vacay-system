@@ -12,7 +12,6 @@ const leaveTypeColors: Record<LeaveType, string> = {
   annual: "#3B82F6",
   personal: "#8B5CF6",
   sick: "#EF4444",
-  official: "#14B8A6",
   unpaid: "#6B7280",
   remote: "#22C55E",
   family_care: "#F59E0B",
