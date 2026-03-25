@@ -181,7 +181,7 @@ export default function NewLeavePage() {
 
   const leaveTypeLabel = (type: LeaveType) => t(`leave.types.${type}` as `leave.types.${LeaveType}`);
 
-  const handoverRequired = workingDays >= 3;
+  const handoverRequired = workingDays >= 3 && leaveType !== "remote";
 
   // Derive selected delegate IDs from the matrix
   const selectedDelegateIds = useMemo(() => {

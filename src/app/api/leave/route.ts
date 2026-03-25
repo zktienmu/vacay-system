@@ -148,8 +148,8 @@ export const POST = withAuth(
         );
       }
 
-      // Require handover URL for leaves >= 3 working days (skip for admin backfill)
-      if (!isAdminBackfill && days >= 3 && (!handover_url || handover_url.trim() === "")) {
+      // Require handover URL for leaves >= 3 working days (skip for admin backfill and remote)
+      if (!isAdminBackfill && leave_type !== "remote" && days >= 3 && (!handover_url || handover_url.trim() === "")) {
         return NextResponse.json(
           {
             success: false,
