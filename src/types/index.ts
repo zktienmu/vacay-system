@@ -29,7 +29,6 @@ export type LeaveType =
   | "annual"
   | "personal"
   | "sick"
-  | "unpaid"
   | "remote"
   | "family_care"
   | "menstrual";

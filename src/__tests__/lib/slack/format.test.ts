@@ -25,13 +25,7 @@ describe('formatLeaveType', () => {
     expect(formatLeaveType('sick')).toBe('病假')
   })
 
-  it('returns Chinese label for official', () => {
-    expect(formatLeaveType('official')).toBe('公假')
-  })
 
-  it('returns Chinese label for unpaid', () => {
-    expect(formatLeaveType('unpaid')).toBe('無薪假')
-  })
 
   it('returns Chinese label for remote', () => {
     expect(formatLeaveType('remote')).toBe('遠端工作')

@@ -9,7 +9,6 @@ const leaveTypeEmojis: Record<LeaveType, string> = {
   annual: "🌴",
   personal: "👤",
   sick: "🏥",
-  unpaid: "📋",
   remote: "🏠",
   family_care: "👨‍👩‍👧",
   menstrual: "🩸",

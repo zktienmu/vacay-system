@@ -25,7 +25,6 @@ const LEAVE_TYPES: LeaveType[] = [
   "annual",
   "personal",
   "sick",
-  "unpaid",
   "remote",
   "family_care",
   "menstrual",
@@ -253,15 +252,15 @@ export default function EmployeesPage() {
       const form: PolicyFormData = {};
       for (const type of LEAVE_TYPES) {
         const policy = json.data.find((p) => p.leave_type === type);
-        // Default: annual → 0, menstrual → 2, others → -1 (unlimited)
-        form[type] = policy?.total_days ?? (type === "annual" ? 0 : type === "menstrual" ? 2 : -1);
+        // Default: annual → 0, menstrual → 2, family_care → 7, others → -1 (unlimited)
+        form[type] = policy?.total_days ?? (type === "annual" ? 0 : type === "menstrual" ? 2 : type === "family_care" ? 7 : -1);
       }
       setPolicyForm(form);
     } catch (err) {
       console.error("Failed to fetch policies:", err);
       const form: PolicyFormData = {};
       for (const type of LEAVE_TYPES) {
-        form[type] = type === "annual" ? 0 : type === "menstrual" ? 2 : -1;
+        form[type] = type === "annual" ? 0 : type === "menstrual" ? 2 : type === "family_care" ? 7 : -1;
       }
       setPolicyForm(form);
       setPolicies([]);

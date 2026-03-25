@@ -91,7 +91,7 @@ describe('BalanceCard', () => {
 
   it('shows 0% progress when total_days is 0', () => {
     const emptyBalance: LeaveBalance = {
-      leave_type: 'unpaid',
+      leave_type: 'personal',
       total_days: 0,
       used_days: 0,
       remaining_days: 0,

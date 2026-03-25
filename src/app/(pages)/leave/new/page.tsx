@@ -21,7 +21,6 @@ const LEAVE_TYPES: LeaveType[] = [
   "annual",
   "personal",
   "sick",
-  "unpaid",
   "remote",
   "family_care",
   "menstrual",

@@ -274,47 +274,7 @@ describe('POST /api/leave', () => {
     expect(json.error).toContain('No working days')
   })
 
-  it('skips balance check for unpaid leave', async () => {
-    const created = mockLeaveRequest({ leave_type: 'unpaid' })
-    mockCreateLeaveRequest.mockResolvedValue(created)
 
-    const req = new NextRequest('http://localhost/api/leave', {
-      method: 'POST',
-      body: JSON.stringify({
-        leave_type: 'unpaid',
-        start_date: '2026-04-06',
-        end_date: '2026-04-10',
-        delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
-        handover_url: 'https://docs.google.com/handover',
-        notes: 'Unpaid leave reason',
-      }),
-    })
-    const res = await POST(req, { params: Promise.resolve({}) })
-    const json = await res.json()
-
-    expect(res.status).toBe(201)
-    expect(json.success).toBe(true)
-  })
-
-  it('skips balance check for official leave', async () => {
-    const created = mockLeaveRequest({ leave_type: 'official' })
-    mockCreateLeaveRequest.mockResolvedValue(created)
-
-    const req = new NextRequest('http://localhost/api/leave', {
-      method: 'POST',
-      body: JSON.stringify({
-        leave_type: 'official',
-        start_date: '2026-04-06',
-        end_date: '2026-04-10',
-        delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
-        handover_url: 'https://docs.google.com/handover',
-        notes: 'Official business trip',
-      }),
-    })
-    const res = await POST(req, { params: Promise.resolve({}) })
-
-    expect(res.status).toBe(201)
-  })
 
   it('returns 400 when insufficient leave balance', async () => {
     mockGetApprovedDaysInPeriod.mockResolvedValue(19) // Used 19 of 20

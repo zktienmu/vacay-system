@@ -184,8 +184,8 @@ describe('getLeaveTypeEmoji', () => {
     expect(getLeaveTypeEmoji('annual')).toBe('\u{1F334}')
     expect(getLeaveTypeEmoji('personal')).toBe('\u{1F464}')
     expect(getLeaveTypeEmoji('sick')).toBe('\u{1F3E5}')
-    expect(getLeaveTypeEmoji('official')).toBe('\u{1F4BC}')
-    expect(getLeaveTypeEmoji('unpaid')).toBe('\u{1F4CB}')
+    
+    
     expect(getLeaveTypeEmoji('remote')).toBe('\u{1F3E0}')
   })
 })

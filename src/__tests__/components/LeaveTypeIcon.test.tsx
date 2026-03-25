@@ -21,13 +21,7 @@ describe('getLeaveTypeEmoji', () => {
     expect(getLeaveTypeEmoji('sick')).toBe('\uD83C\uDFE5')
   })
 
-  it('returns briefcase emoji for official', () => {
-    expect(getLeaveTypeEmoji('official')).toBe('\uD83D\uDCBC')
-  })
 
-  it('returns clipboard emoji for unpaid', () => {
-    expect(getLeaveTypeEmoji('unpaid')).toBe('\uD83D\uDCCB')
-  })
 
   it('returns house emoji for remote', () => {
     expect(getLeaveTypeEmoji('remote')).toBe('\uD83C\uDFE0')
@@ -47,13 +41,7 @@ describe('getLeaveTypeLabel', () => {
     expect(getLeaveTypeLabel('sick')).toBe('Sick')
   })
 
-  it('returns "Official" for official', () => {
-    expect(getLeaveTypeLabel('official')).toBe('Official')
-  })
 
-  it('returns "Unpaid" for unpaid', () => {
-    expect(getLeaveTypeLabel('unpaid')).toBe('Unpaid')
-  })
 
   it('returns "Remote" for remote', () => {
     expect(getLeaveTypeLabel('remote')).toBe('Remote')
@@ -73,13 +61,7 @@ describe('getLeaveTypeColor', () => {
     expect(getLeaveTypeColor('sick')).toContain('text-red-600')
   })
 
-  it('returns color class containing text-teal-600 for official', () => {
-    expect(getLeaveTypeColor('official')).toContain('text-teal-600')
-  })
 
-  it('returns color class containing text-gray-600 for unpaid', () => {
-    expect(getLeaveTypeColor('unpaid')).toContain('text-gray-600')
-  })
 
   it('returns color class containing text-green-600 for remote', () => {
     expect(getLeaveTypeColor('remote')).toContain('text-green-600')
@@ -92,7 +74,7 @@ describe('getLeaveTypeColor', () => {
 
 describe('LeaveTypeIcon component', () => {
   it('renders emoji for each leave type', () => {
-    const types: LeaveType[] = ['annual', 'personal', 'sick', 'official', 'unpaid', 'remote']
+    const types: LeaveType[] = ['annual', 'personal', 'sick', 'remote', 'family_care', 'menstrual']
 
     for (const type of types) {
       const { unmount } = renderWithProviders(<LeaveTypeIcon type={type} />)

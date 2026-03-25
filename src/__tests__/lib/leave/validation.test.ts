@@ -53,13 +53,13 @@ describe('createLeaveRequestSchema', () => {
   })
 
   it('accepts all leave types', () => {
-    const types = ['annual', 'personal', 'sick', 'official', 'unpaid', 'remote', 'family_care', 'menstrual']
+    const types = ['annual', 'personal', 'sick', 'remote', 'family_care', 'menstrual']
     for (const type of types) {
       const result = createLeaveRequestSchema.safeParse({
         ...validRequest,
         leave_type: type,
-        // notes required for non-annual, non-remote types
-        notes: type !== 'annual' && type !== 'remote' ? 'Test reason' : undefined,
+        // notes required for all types except annual
+        notes: type !== 'annual' ? 'Test reason' : undefined,
       })
       expect(result.success).toBe(true)
     }
@@ -451,7 +451,7 @@ describe('upsertPolicySchema', () => {
   })
 
   it('accepts all leave types', () => {
-    const types = ['annual', 'personal', 'sick', 'official', 'unpaid', 'remote', 'family_care', 'menstrual']
+    const types = ['annual', 'personal', 'sick', 'remote', 'family_care', 'menstrual']
     for (const type of types) {
       const result = upsertPolicySchema.safeParse({
         leave_type: type,

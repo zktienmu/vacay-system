@@ -159,8 +159,8 @@ export const POST = withAuth(
         );
       }
 
-      // Check balance (skip for unpaid leave and admin backfill)
-      if (!isAdminBackfill && leave_type !== "unpaid") {
+      // Check balance (skip for admin backfill)
+      if (!isAdminBackfill) {
         const employee = await getEmployeeById(targetEmployeeId);
         if (!employee) {
           return NextResponse.json(
