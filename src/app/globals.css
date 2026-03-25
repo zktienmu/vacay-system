@@ -16,6 +16,9 @@
   --foreground: #0A0A0A;
   --accent: #FF5C00;
   --accent-hover: #E65200;
+  /* Reown AppKit button theming */
+  --w3m-accent: #FF5C00;
+  --w3m-border-radius-master: 0px;
 }
 
 .dark {
