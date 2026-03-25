@@ -355,7 +355,7 @@ export default function NewLeavePage() {
           : "Handover document URL is required for leaves of 3+ working days"
       );
     }
-    if (leaveType !== "annual" && !notes.trim()) {
+    if (leaveType !== "annual" && leaveType !== "menstrual" && !notes.trim()) {
       errors.push(
         locale === "zh-TW"
           ? "此假別需要填寫事由"
@@ -1037,10 +1037,10 @@ export default function NewLeavePage() {
         {/* Notes */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {leaveType !== "annual"
+            {leaveType !== "annual" && leaveType !== "menstrual"
               ? (locale === "zh-TW" ? "事由" : "Reason")
               : t("leave.notes")}
-            {leaveType !== "annual" && (
+            {leaveType !== "annual" && leaveType !== "menstrual" && (
               <span className="ml-0.5 text-red-500">*</span>
             )}
           </label>

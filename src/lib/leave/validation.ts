@@ -60,9 +60,9 @@ export const createLeaveRequestSchema = z
     { message: "End date must be on or after start date" },
   )
   .refine(
-    (data) => data.leave_type === "annual" || (data.notes && data.notes.trim() !== ""),
+    (data) => data.leave_type === "annual" || data.leave_type === "menstrual" || (data.notes && data.notes.trim() !== ""),
     {
-      message: "事由為必填（特休除外）",
+      message: "事由為必填（特休及生理假除外）",
       path: ["notes"],
     },
   );
