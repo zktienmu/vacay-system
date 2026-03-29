@@ -276,6 +276,92 @@ describe('POST /api/leave', () => {
 
 
 
+  // --- Leave type + field combination tests (regression coverage) ---
+
+  it('allows remote work without delegates', async () => {
+    const created = mockLeaveRequest({ id: 'remote-lr', leave_type: 'remote', status: 'pending', days: 1 })
+    mockCreateLeaveRequest.mockResolvedValue(created)
+    mockGetLeavePolicies.mockResolvedValue([
+      { id: 'p-remote', employee_id: 'emp-001', leave_type: 'remote', total_days: 50, expires_at: null, created_at: '', updated_at: '' },
+    ])
+
+    const req = new NextRequest('http://localhost/api/leave', {
+      method: 'POST',
+      body: JSON.stringify({
+        leave_type: 'remote',
+        start_date: '2026-04-06',
+        end_date: '2026-04-06',
+        notes: 'Working from home',
+      }),
+    })
+    const res = await POST(req, { params: Promise.resolve({}) })
+    const json = await res.json()
+
+    expect(res.status).toBe(201)
+    expect(json.success).toBe(true)
+  })
+
+  it('returns 400 when non-remote leave has no delegates', async () => {
+    mockGetLeavePolicies.mockResolvedValue([
+      { id: 'p-sick', employee_id: 'emp-001', leave_type: 'sick', total_days: 30, expires_at: null, created_at: '', updated_at: '' },
+    ])
+
+    const req = new NextRequest('http://localhost/api/leave', {
+      method: 'POST',
+      body: JSON.stringify({
+        leave_type: 'sick',
+        start_date: '2026-04-06',
+        end_date: '2026-04-06',
+        notes: 'Feeling unwell',
+      }),
+    })
+    const res = await POST(req, { params: Promise.resolve({}) })
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toContain('delegate')
+  })
+
+  it('allows remote work without handover_url even for 3+ days', async () => {
+    const created = mockLeaveRequest({ id: 'remote-3d', leave_type: 'remote', status: 'pending', days: 3 })
+    mockCreateLeaveRequest.mockResolvedValue(created)
+    mockGetLeavePolicies.mockResolvedValue([
+      { id: 'p-remote', employee_id: 'emp-001', leave_type: 'remote', total_days: 50, expires_at: null, created_at: '', updated_at: '' },
+    ])
+
+    const req = new NextRequest('http://localhost/api/leave', {
+      method: 'POST',
+      body: JSON.stringify({
+        leave_type: 'remote',
+        start_date: '2026-04-06',
+        end_date: '2026-04-08',
+        notes: 'Working from home this week',
+      }),
+    })
+    const res = await POST(req, { params: Promise.resolve({}) })
+    const json = await res.json()
+
+    expect(res.status).toBe(201)
+    expect(json.success).toBe(true)
+  })
+
+  it('returns 400 when non-remote 3+ day leave has no handover_url', async () => {
+    const req = new NextRequest('http://localhost/api/leave', {
+      method: 'POST',
+      body: JSON.stringify({
+        leave_type: 'annual',
+        start_date: '2026-04-06',
+        end_date: '2026-04-08',
+        delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
+      }),
+    })
+    const res = await POST(req, { params: Promise.resolve({}) })
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toContain('Handover')
+  })
+
   it('returns 400 when insufficient leave balance', async () => {
     mockGetApprovedDaysInPeriod.mockResolvedValue(19) // Used 19 of 20
 
