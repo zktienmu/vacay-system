@@ -28,13 +28,15 @@ export default function LoginPage() {
   const [hasTriedSiwe, setHasTriedSiwe] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
 
-  // If wallet is connected but session is invalid, disconnect wallet first
-  // This prevents the auto-SIWE from firing while WalletConnect is in a stale state
+  // If wallet is connected but session is invalid AND there was a previous session
+  // that went idle, disconnect the stale wallet first.
+  // Only disconnect when lastActivity exists but is stale — if null, it means the
+  // user never had a session, so this is a fresh connect and should not be interrupted.
   useEffect(() => {
     if (!isLoading && !isAuthenticated && isConnected && !disconnecting) {
       const lastActivity = localStorage.getItem(ACTIVITY_KEY);
-      const isIdle = !lastActivity || Date.now() - Number(lastActivity) > IDLE_TIMEOUT_MS;
-      if (isIdle) {
+      const isStale = lastActivity && Date.now() - Number(lastActivity) > IDLE_TIMEOUT_MS;
+      if (isStale) {
         setDisconnecting(true);
         disconnectAsync().catch(() => {}).finally(() => setDisconnecting(false));
       }
