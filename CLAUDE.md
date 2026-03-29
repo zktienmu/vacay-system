@@ -55,8 +55,10 @@ Next.js 16 "proxy" convention (replaces deprecated middleware.ts). Handles:
 - **Anniversary-based periods** (not calendar year) — leave resets on employment anniversary
 - Working days exclude weekends + public holidays from DB
 - Leave ≥3 working days requires `handover_url` (enforced in API + frontend)
+- Remote work (`remote`) is exempt from delegate and handover_url requirements
 - Balance checks skip `unpaid` and `official` leave types
 - Delegate receives Slack notification on approval
+- **Testing rule**: When changing leave-type-specific validation (delegate, handover, advance notice), MUST add corresponding API-level tests in `src/__tests__/api/leave.test.ts` covering both the allow and reject paths. Frontend-only tests are insufficient — the API is the enforcement layer.
 
 ### Integrations (`src/lib/integrations/hooks.ts`)
 Fire-and-forget pattern — failures don't break the main flow:
