@@ -258,13 +258,13 @@ describe('POST /api/leave', () => {
   })
 
   it('returns 400 when no working days in range (weekend only)', async () => {
-    // 2026-04-04 is Saturday, 2026-04-05 is Sunday
+    // 2026-05-02 is Saturday, 2026-05-03 is Sunday (>7 days away to pass advance check)
     const req = new NextRequest('http://localhost/api/leave', {
       method: 'POST',
       body: JSON.stringify({
         leave_type: 'annual',
-        start_date: '2026-04-04',
-        end_date: '2026-04-05',
+        start_date: '2026-05-02',
+        end_date: '2026-05-03',
       }),
     })
     const res = await POST(req, { params: Promise.resolve({}) })

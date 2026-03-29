@@ -217,8 +217,8 @@ export const POST = withAuth(
             ? [delegate_id]
             : [];
 
-      // Non-backfill requests require at least one delegate
-      if (!isAdminBackfill && resolvedDelegateIds.length === 0) {
+      // Non-backfill requests require at least one delegate (except remote work)
+      if (!isAdminBackfill && resolvedDelegateIds.length === 0 && leave_type !== "remote") {
         return NextResponse.json(
           { success: false, error: "At least one delegate is required" },
           { status: 400 },
