@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppKitAccount } from "@reown/appkit/react";
 import { useDisconnect, useSignMessage, useChainId } from "wagmi";
 import { SiweMessage } from "siwe";
+import { getAddress } from "viem";
 import { useSession } from "@/hooks/useSession";
 import { useTranslation } from "@/lib/i18n/context";
 import type { ApiResponse } from "@/types";
@@ -66,10 +67,11 @@ export default function LoginPage() {
 
       const { nonce } = nonceJson.data;
 
-      // 2. Construct SIWE message
+      // 2. Construct SIWE message (checksum address for EIP-55 compliance)
+      const checksumAddress = getAddress(address);
       const siweMessage = new SiweMessage({
         domain: window.location.host,
-        address,
+        address: checksumAddress,
         statement: "Sign in with Ethereum to Dinngo Leave System",
         uri: window.location.origin,
         version: "1",
