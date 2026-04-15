@@ -243,8 +243,8 @@ describe('POST /api/leave', () => {
       method: 'POST',
       body: JSON.stringify({
         leave_type: 'annual',
-        start_date: '2026-04-06',
-        end_date: '2026-04-08',
+        start_date: '2026-06-01',
+        end_date: '2026-06-03',
         delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
         handover_url: 'https://docs.google.com/handover',
       }),
@@ -289,8 +289,8 @@ describe('POST /api/leave', () => {
       method: 'POST',
       body: JSON.stringify({
         leave_type: 'remote',
-        start_date: '2026-04-06',
-        end_date: '2026-04-06',
+        start_date: '2026-06-01',
+        end_date: '2026-06-01',
         notes: 'Working from home',
       }),
     })
@@ -310,8 +310,8 @@ describe('POST /api/leave', () => {
       method: 'POST',
       body: JSON.stringify({
         leave_type: 'sick',
-        start_date: '2026-04-06',
-        end_date: '2026-04-06',
+        start_date: '2026-06-01',
+        end_date: '2026-06-01',
         notes: 'Feeling unwell',
       }),
     })
@@ -333,8 +333,8 @@ describe('POST /api/leave', () => {
       method: 'POST',
       body: JSON.stringify({
         leave_type: 'remote',
-        start_date: '2026-04-06',
-        end_date: '2026-04-08',
+        start_date: '2026-06-01',
+        end_date: '2026-06-03',
         notes: 'Working from home this week',
       }),
     })
@@ -350,8 +350,8 @@ describe('POST /api/leave', () => {
       method: 'POST',
       body: JSON.stringify({
         leave_type: 'annual',
-        start_date: '2026-04-06',
-        end_date: '2026-04-08',
+        start_date: '2026-06-01',
+        end_date: '2026-06-03',
         delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
       }),
     })
@@ -369,8 +369,8 @@ describe('POST /api/leave', () => {
       method: 'POST',
       body: JSON.stringify({
         leave_type: 'annual',
-        start_date: '2026-04-06',
-        end_date: '2026-04-10', // 5 working days but only 1 remaining
+        start_date: '2026-06-01',
+        end_date: '2026-06-05', // 5 working days but only 1 remaining
         delegate_ids: ['d0000000-0000-4000-a000-000000000002'],
         handover_url: 'https://docs.google.com/handover',
       }),
@@ -591,5 +591,76 @@ describe('PATCH /api/leave/[id]', () => {
 
     expect(res.status).toBe(400)
     expect(json.error).toContain('Only pending or approved')
+  })
+
+  // Regression test: cancellation must AWAIT the integration hook before responding,
+  // otherwise on Vercel serverless the function gets killed mid-execution and the
+  // calendar event + Slack notifications never go out (Ben reported this on 2026-04-15).
+  it('awaits onLeaveRequestCancelled before returning response', async () => {
+    mockSessionData.role = 'employee'
+    mockSessionData.employee_id = 'emp-001'
+
+    const approvedRequest = mockLeaveRequest({
+      status: 'approved',
+      employee_id: 'emp-001',
+      start_date: '2099-04-01', // future, so cancellation is allowed
+      end_date: '2099-04-03',
+      calendar_event_id: 'gcal-evt-xyz',
+    })
+    mockGetLeaveRequestById.mockResolvedValue(approvedRequest)
+    mockUpdateLeaveRequest.mockResolvedValue({ ...approvedRequest, status: 'cancelled' })
+
+    // Make the integration hook take a measurable amount of time so we can prove
+    // the route waited for it, not fire-and-forget.
+    let hookCompleted = false
+    const { onLeaveRequestCancelled } = await import('@/lib/integrations/hooks')
+    ;(onLeaveRequestCancelled as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      () => new Promise<void>((resolve) => {
+        setTimeout(() => {
+          hookCompleted = true
+          resolve()
+        }, 30)
+      }),
+    )
+
+    const req = new NextRequest('http://localhost/api/leave/550e8400-e29b-41d4-a716-446655440000', {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'cancelled' }),
+    })
+    const res = await PATCH(req, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+
+    expect(res.status).toBe(200)
+    // If the route was using fire-and-forget, the response would resolve before the hook.
+    expect(hookCompleted).toBe(true)
+    expect(onLeaveRequestCancelled).toHaveBeenCalledWith(approvedRequest)
+  })
+
+  it('still returns 200 when onLeaveRequestCancelled throws', async () => {
+    mockSessionData.role = 'employee'
+    mockSessionData.employee_id = 'emp-001'
+
+    const pendingRequest = mockLeaveRequest({ status: 'pending', employee_id: 'emp-001' })
+    mockGetLeaveRequestById.mockResolvedValue(pendingRequest)
+    mockUpdateLeaveRequest.mockResolvedValue({ ...pendingRequest, status: 'cancelled' })
+
+    const { onLeaveRequestCancelled } = await import('@/lib/integrations/hooks')
+    ;(onLeaveRequestCancelled as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('Slack/Calendar exploded'),
+    )
+
+    const req = new NextRequest('http://localhost/api/leave/550e8400-e29b-41d4-a716-446655440000', {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'cancelled' }),
+    })
+    const res = await PATCH(req, {
+      params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440000' }),
+    })
+    const json = await res.json()
+
+    // Integration failure must not poison the user-facing cancel flow.
+    expect(res.status).toBe(200)
+    expect(json.success).toBe(true)
   })
 })

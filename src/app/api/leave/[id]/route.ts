@@ -104,8 +104,13 @@ export const PATCH = withAuth(
             getClientIp(req),
         }).catch((err) => console.error("[AuditLog] Failed:", err));
 
-        // Fire-and-forget: clean up calendar event
-        onLeaveRequestCancelled(leaveRequest).catch(() => {});
+        // Await integrations BEFORE returning response — Vercel kills the function
+        // after response is sent, so fire-and-forget doesn't work on serverless.
+        try {
+          await onLeaveRequestCancelled(leaveRequest);
+        } catch (err) {
+          console.error("[Integration] onLeaveRequestCancelled failed:", err);
+        }
 
         return NextResponse.json({ success: true, data: updated });
       }

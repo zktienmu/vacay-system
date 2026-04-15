@@ -9,6 +9,7 @@ const {
   mockNotifyRejected,
   mockNotifyCancelled,
   mockNotifyDelegate,
+  mockNotifyDelegateCancelled,
   mockNotifyChainDelegation,
   mockCreateLeaveEvent,
   mockDeleteLeaveEvent,
@@ -19,6 +20,7 @@ const {
   mockNotifyRejected: vi.fn().mockResolvedValue(undefined),
   mockNotifyCancelled: vi.fn().mockResolvedValue(undefined),
   mockNotifyDelegate: vi.fn().mockResolvedValue(undefined),
+  mockNotifyDelegateCancelled: vi.fn().mockResolvedValue(undefined),
   mockNotifyChainDelegation: vi.fn().mockResolvedValue(undefined),
   mockCreateLeaveEvent: vi.fn().mockResolvedValue(null),
   mockDeleteLeaveEvent: vi.fn().mockResolvedValue(undefined),
@@ -31,6 +33,7 @@ vi.mock('@/lib/slack/notify', () => ({
   notifyRejected: mockNotifyRejected,
   notifyCancelled: mockNotifyCancelled,
   notifyDelegate: mockNotifyDelegate,
+  notifyDelegateCancelled: mockNotifyDelegateCancelled,
   notifyChainDelegation: mockNotifyChainDelegation,
 }))
 
@@ -559,6 +562,59 @@ describe('onLeaveRequestCancelled', () => {
     // Slack notification is skipped (no employee), but calendar cleanup still happens
     expect(mockNotifyCancelled).not.toHaveBeenCalled()
     expect(mockDeleteLeaveEvent).toHaveBeenCalledWith('gcal-orphan')
+  })
+
+  it('notifies each delegate that they no longer need to cover', async () => {
+    const employee = mockEmployee({ id: 'emp-001', name: 'Alice' })
+    const del1 = mockEmployee({ id: 'del-1', name: 'Bob', slack_user_id: 'U-bob' })
+    const del2 = mockEmployee({ id: 'del-2', name: 'Carol', slack_user_id: 'U-carol' })
+
+    // Queue: employee, then each delegate
+    setupApprovalFlow(employee, [del1, del2])
+
+    const request = mockLeaveRequest({
+      employee_id: 'emp-001',
+      delegate_ids: ['del-1', 'del-2'],
+    })
+
+    await onLeaveRequestCancelled(request)
+
+    expect(mockNotifyDelegateCancelled).toHaveBeenCalledTimes(2)
+    expect(mockNotifyDelegateCancelled).toHaveBeenCalledWith(request, employee, del1)
+    expect(mockNotifyDelegateCancelled).toHaveBeenCalledWith(request, employee, del2)
+  })
+
+  it('falls back to delegate_id (legacy single-delegate field) when delegate_ids is empty', async () => {
+    const employee = mockEmployee({ id: 'emp-001', name: 'Alice' })
+    const legacyDelegate = mockEmployee({ id: 'legacy-del', name: 'Dave', slack_user_id: 'U-dave' })
+
+    setupApprovalFlow(employee, [legacyDelegate])
+
+    const request = mockLeaveRequest({
+      employee_id: 'emp-001',
+      delegate_id: 'legacy-del',
+      delegate_ids: [],
+    })
+
+    await onLeaveRequestCancelled(request)
+
+    expect(mockNotifyDelegateCancelled).toHaveBeenCalledTimes(1)
+    expect(mockNotifyDelegateCancelled).toHaveBeenCalledWith(request, employee, legacyDelegate)
+  })
+
+  it('does not notify any delegate when none are set', async () => {
+    const employee = mockEmployee({ id: 'emp-001' })
+    setupEmployeeFetch(employee)
+
+    const request = mockLeaveRequest({
+      employee_id: 'emp-001',
+      delegate_id: null,
+      delegate_ids: [],
+    })
+
+    await onLeaveRequestCancelled(request)
+
+    expect(mockNotifyDelegateCancelled).not.toHaveBeenCalled()
   })
 
 })

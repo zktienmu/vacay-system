@@ -253,6 +253,19 @@ export async function notifyCancelled(
   const blocks = buildCancelledBlocks(request, employee);
   const fallbackText = `🚫 ${employee.name} 取消了假期`;
 
+  // DM the employee to confirm their cancellation went through
+  if (employee.slack_user_id) {
+    try {
+      await slack.chat.postMessage({
+        channel: employee.slack_user_id,
+        text: fallbackText,
+        blocks,
+      });
+    } catch (error) {
+      console.error("[Slack] Failed to DM employee about cancellation", error);
+    }
+  }
+
   // Post to the leave channel
   if (channelId) {
     try {
@@ -264,6 +277,34 @@ export async function notifyCancelled(
     } catch (error) {
       console.error("[Slack] Failed to post cancellation to leave channel", error);
     }
+  }
+}
+
+/**
+ * DM a delegate that the leave they were covering for has been cancelled.
+ * Fire-and-forget: errors are logged, never thrown.
+ */
+export async function notifyDelegateCancelled(
+  request: LeaveRequest,
+  employee: Employee,
+  delegate: Employee,
+): Promise<void> {
+  if (!slack || !delegate.slack_user_id) return;
+
+  const dateRange = formatDateRange(request.start_date, request.end_date);
+  const lines = [
+    `🚫 *代理通知：假期已取消*`,
+    `${employee.name} 取消了原本的假期（${dateRange}），你不需要代理了。`,
+  ].join("\n");
+
+  try {
+    await slack.chat.postMessage({
+      channel: delegate.slack_user_id,
+      text: `🚫 ${employee.name} 取消了假期，你不需要代理`,
+      blocks: [{ type: "section", text: { type: "mrkdwn", text: lines } }],
+    });
+  } catch (error) {
+    console.error("[Slack] Failed to notify delegate about cancellation", delegate.id, error);
   }
 }
 

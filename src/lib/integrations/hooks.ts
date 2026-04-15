@@ -1,6 +1,6 @@
 import "server-only";
 import { supabase } from "@/lib/supabase/client";
-import { notifyNewRequest, notifyApproved, notifyRejected, notifyCancelled, notifyDelegate, notifyChainDelegation, notifyFamilyCareApproval } from "@/lib/slack/notify";
+import { notifyNewRequest, notifyApproved, notifyRejected, notifyCancelled, notifyDelegate, notifyDelegateCancelled, notifyChainDelegation, notifyFamilyCareApproval } from "@/lib/slack/notify";
 import { createLeaveEvent, deleteLeaveEvent } from "@/lib/google/calendar";
 import type { LeaveRequest, Employee, DelegateAssignment, ChainDelegation } from "@/types";
 import type { ResolvedDelegateAssignment } from "@/lib/slack/format";
@@ -262,15 +262,32 @@ export async function onLeaveRequestRejected(
 
 /**
  * Called when a leave request is cancelled.
- * Cleans up the calendar event and Asana tasks if any exist.
+ * - Posts cancellation notice to Slack channel + DMs the employee
+ * - DMs each delegate so they know they don't need to cover anymore
+ * - Deletes the Google Calendar event
  */
 export async function onLeaveRequestCancelled(
   request: LeaveRequest,
 ): Promise<void> {
-  // Notify on Slack channel
+  // Notify channel + employee
   const employee = await fetchEmployee(request.employee_id);
   if (employee) {
     await notifyCancelled(request, employee);
+
+    // Notify each delegate that they no longer need to cover.
+    // Only meaningful for previously-approved requests where delegates were already informed,
+    // but harmless for pending requests (delegate just learns the request was withdrawn).
+    const delegateIds = request.delegate_ids?.length
+      ? request.delegate_ids
+      : request.delegate_id
+        ? [request.delegate_id]
+        : [];
+    for (const did of delegateIds) {
+      const delegate = await fetchEmployee(did);
+      if (delegate) {
+        await notifyDelegateCancelled(request, employee, delegate);
+      }
+    }
   }
 
   // Clean up calendar event

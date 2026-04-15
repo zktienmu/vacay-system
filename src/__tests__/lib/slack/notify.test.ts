@@ -42,6 +42,7 @@ import {
   notifyRejected,
   notifyCancelled,
   notifyDelegate,
+  notifyDelegateCancelled,
 } from '@/lib/slack/notify'
 
 describe('notifyNewRequest', () => {
@@ -325,9 +326,24 @@ describe('notifyCancelled', () => {
     vi.clearAllMocks()
   })
 
-  it('posts to the leave channel', async () => {
+  it('DMs the employee and posts to the leave channel', async () => {
     const request = mockLeaveRequest()
-    const employee = mockEmployee({ name: 'Alice' })
+    const employee = mockEmployee({ name: 'Alice', slack_user_id: 'U-alice' })
+
+    await notifyCancelled(request, employee)
+
+    expect(mockPostMessage).toHaveBeenCalledTimes(2)
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: 'U-alice' }),
+    )
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: 'C-leave-channel' }),
+    )
+  })
+
+  it('still posts to channel when employee has no slack_user_id', async () => {
+    const request = mockLeaveRequest()
+    const employee = mockEmployee({ name: 'Alice', slack_user_id: null })
 
     await notifyCancelled(request, employee)
 
@@ -337,12 +353,50 @@ describe('notifyCancelled', () => {
     )
   })
 
-  it('does not throw on failure', async () => {
-    mockPostMessage.mockRejectedValueOnce(new Error('Channel error'))
+  it('does not throw when DM or channel post fails', async () => {
+    mockPostMessage.mockRejectedValue(new Error('Channel error'))
 
     const request = mockLeaveRequest()
-    const employee = mockEmployee()
+    const employee = mockEmployee({ slack_user_id: 'U-alice' })
 
     await expect(notifyCancelled(request, employee)).resolves.toBeUndefined()
+  })
+})
+
+describe('notifyDelegateCancelled', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('DMs the delegate', async () => {
+    const request = mockLeaveRequest()
+    const employee = mockEmployee({ name: 'Alice' })
+    const delegate = mockEmployee({ id: 'del-1', name: 'Bob', slack_user_id: 'U-bob' })
+
+    await notifyDelegateCancelled(request, employee, delegate)
+
+    expect(mockPostMessage).toHaveBeenCalledTimes(1)
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: 'U-bob' }),
+    )
+  })
+
+  it('skips silently when delegate has no slack_user_id', async () => {
+    const request = mockLeaveRequest()
+    const employee = mockEmployee({ name: 'Alice' })
+    const delegate = mockEmployee({ id: 'del-1', name: 'Bob', slack_user_id: null })
+
+    await notifyDelegateCancelled(request, employee, delegate)
+
+    expect(mockPostMessage).not.toHaveBeenCalled()
+  })
+
+  it('does not throw when DM fails', async () => {
+    mockPostMessage.mockRejectedValueOnce(new Error('Slack down'))
+    const request = mockLeaveRequest()
+    const employee = mockEmployee({ name: 'Alice' })
+    const delegate = mockEmployee({ id: 'del-1', slack_user_id: 'U-bob' })
+
+    await expect(notifyDelegateCancelled(request, employee, delegate)).resolves.toBeUndefined()
   })
 })
