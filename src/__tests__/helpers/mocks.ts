@@ -49,6 +49,7 @@ export function mockEmployee(overrides: Partial<Employee> = {}): Employee {
     department: 'engineering',
     is_manager: false,
     transition_annual_days: null,
+    transition_expires_at: null,
     created_at: '2024-01-15T00:00:00Z',
     updated_at: '2024-01-15T00:00:00Z',
     ...overrides,

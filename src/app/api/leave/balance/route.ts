@@ -52,6 +52,7 @@ export const GET = withAuth(
             type,
             employee.start_date,
             employee.transition_annual_days,
+            employee.transition_expires_at,
           ),
         ),
       );

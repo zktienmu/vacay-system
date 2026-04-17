@@ -26,7 +26,11 @@ const LEAVE_TYPES: LeaveType[] = [
 ];
 
 // Transition period: from 2026/1/1 to the day before the next employment anniversary
-function calculateTransitionPeriod(startDate: string) {
+// If overrideEndDate is set, use that as the period end instead
+function calculateTransitionPeriod(startDate: string, overrideEndDate?: string | null) {
+  if (overrideEndDate) {
+    return { periodStart: "2026-01-01", periodEnd: overrideEndDate };
+  }
   const start = new Date(startDate);
   // Find the next anniversary date after 2026-01-01
   let nextYear = 2026;
@@ -41,8 +45,8 @@ function calculateTransitionPeriod(startDate: string) {
 }
 
 // Formal annual leave period: starts the day after transition ends, lasts one year
-function calculateFormalPeriod(startDate: string) {
-  const transition = calculateTransitionPeriod(startDate);
+function calculateFormalPeriod(startDate: string, overrideEndDate?: string | null) {
+  const transition = calculateTransitionPeriod(startDate, overrideEndDate);
   const periodStart = new Date(transition.periodEnd);
   periodStart.setDate(periodStart.getDate() + 1);
   const periodEnd = new Date(periodStart);
@@ -116,7 +120,7 @@ export default function TransitionPage() {
   const period = useMemo(
     () =>
       expandedEmployee
-        ? calculateTransitionPeriod(expandedEmployee.start_date)
+        ? calculateTransitionPeriod(expandedEmployee.start_date, expandedEmployee.transition_expires_at)
         : null,
     [expandedEmployee],
   );
@@ -124,7 +128,7 @@ export default function TransitionPage() {
   const formalPeriod = useMemo(
     () =>
       expandedEmployee
-        ? calculateFormalPeriod(expandedEmployee.start_date)
+        ? calculateFormalPeriod(expandedEmployee.start_date, expandedEmployee.transition_expires_at)
         : null,
     [expandedEmployee],
   );
@@ -151,8 +155,8 @@ export default function TransitionPage() {
   }
 
   async function fetchEmployeeData(emp: Employee) {
-    const transitionPeriod = calculateTransitionPeriod(emp.start_date);
-    const formal = calculateFormalPeriod(emp.start_date);
+    const transitionPeriod = calculateTransitionPeriod(emp.start_date, emp.transition_expires_at);
+    const formal = calculateFormalPeriod(emp.start_date, emp.transition_expires_at);
 
     let newTransitionLeaves: LeaveRequest[] = [];
     let newFormalLeaves: LeaveRequest[] = [];
@@ -332,7 +336,7 @@ export default function TransitionPage() {
       ) : (
         <div className="space-y-2">
           {employees.map((emp) => {
-            const empPeriod = calculateTransitionPeriod(emp.start_date);
+            const empPeriod = calculateTransitionPeriod(emp.start_date, emp.transition_expires_at);
             const count = backfillCounts[emp.id];
             const isExpanded = expandedId === emp.id;
             return (

@@ -21,6 +21,7 @@ export interface Employee {
   department: "engineering" | "admin";
   is_manager: boolean;
   transition_annual_days: number | null;
+  transition_expires_at: string | null; // ISO date — overrides calculated transition end date
   created_at: string;
   updated_at: string;
 }

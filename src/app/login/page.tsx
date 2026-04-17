@@ -116,13 +116,22 @@ export default function LoginPage() {
     }
   }, [address, isConnected, chainId, signMessageAsync, refetch, router]);
 
+  // Reset hasTriedSiwe when wallet disconnects so auto-trigger works on reconnect
+  // (Brave's built-in wallet auto-reconnects on page load, which can race with
+  // the idle disconnect and leave hasTriedSiwe=true after a failed attempt)
+  useEffect(() => {
+    if (!isConnected) {
+      setHasTriedSiwe(false);
+    }
+  }, [isConnected]);
+
   // Auto-trigger SIWE when wallet connects
   useEffect(() => {
-    if (isConnected && address && step === "idle" && !hasTriedSiwe && !isAuthenticated) {
+    if (isConnected && address && step === "idle" && !hasTriedSiwe && !isAuthenticated && !disconnecting) {
       setHasTriedSiwe(true);
       handleSiwe();
     }
-  }, [isConnected, address, step, hasTriedSiwe, isAuthenticated, handleSiwe]);
+  }, [isConnected, address, step, hasTriedSiwe, isAuthenticated, disconnecting, handleSiwe]);
 
   const stepMessage = (() => {
     switch (step) {

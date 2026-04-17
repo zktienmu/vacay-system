@@ -57,7 +57,7 @@ export const GET = withAdmin(
       for (const employee of employees) {
         const balances = await Promise.all(
           ALL_LEAVE_TYPES.map((type) =>
-            getLeaveBalance(employee.id, type, employee.start_date),
+            getLeaveBalance(employee.id, type, employee.start_date, employee.transition_annual_days, employee.transition_expires_at),
           ),
         );
 

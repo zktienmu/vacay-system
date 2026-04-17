@@ -189,6 +189,7 @@ export const POST = withAuth(
           leave_type,
           employee.start_date,
           employee.transition_annual_days,
+          employee.transition_expires_at,
         );
 
         // Total remaining includes transition + formal

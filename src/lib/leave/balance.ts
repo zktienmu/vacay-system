@@ -79,9 +79,14 @@ export async function calculateWorkingDaysExcludingHolidays(
 }
 
 // Transition period: from 2026/01/01 to the day before the next employment anniversary
+// If overrideEndDate is set, use that as the period end instead of the calculated date
 export function calculateTransitionPeriod(
   startDate: string,
+  overrideEndDate?: string | null,
 ): { periodStart: string; periodEnd: string } {
+  if (overrideEndDate) {
+    return { periodStart: "2026-01-01", periodEnd: overrideEndDate };
+  }
   const start = new Date(startDate);
   let nextYear = 2026;
   let nextAnniversary = new Date(nextYear, start.getMonth(), start.getDate());
@@ -96,8 +101,9 @@ export function calculateTransitionPeriod(
 // Formal period: starts the day after transition ends, lasts one year
 export function calculateFormalPeriod(
   startDate: string,
+  overrideTransitionEnd?: string | null,
 ): { periodStart: string; periodEnd: string } {
-  const transition = calculateTransitionPeriod(startDate);
+  const transition = calculateTransitionPeriod(startDate, overrideTransitionEnd);
   const periodStart = new Date(transition.periodEnd);
   periodStart.setDate(periodStart.getDate() + 1);
   const periodEnd = new Date(periodStart);
@@ -111,6 +117,7 @@ export async function getLeaveBalance(
   leaveType: LeaveType,
   employeeStartDate: string,
   transitionAnnualDays?: number | null,
+  transitionExpiresAt?: string | null,
 ): Promise<LeaveBalance> {
   const policies = await getLeavePolicies(employeeId);
   const policy = policies.find((p) => p.leave_type === leaveType);
@@ -122,8 +129,8 @@ export async function getLeaveBalance(
 
   if (hasTransition) {
     // Use transition + formal period logic (priority: transition first)
-    const transition = calculateTransitionPeriod(employeeStartDate);
-    const formal = calculateFormalPeriod(employeeStartDate);
+    const transition = calculateTransitionPeriod(employeeStartDate, transitionExpiresAt);
+    const formal = calculateFormalPeriod(employeeStartDate, transitionExpiresAt);
     const today = formatDate(new Date());
     const transitionExpired = today > transition.periodEnd;
 

@@ -98,7 +98,7 @@ describe('GET /api/leave/balance', () => {
     expect(json.data).toHaveLength(6)
     expect(mockGetLeaveBalance).toHaveBeenCalledTimes(6)
     // First call should be with the session employee_id
-    expect(mockGetLeaveBalance).toHaveBeenCalledWith('emp-001', 'annual', expect.any(String), null)
+    expect(mockGetLeaveBalance).toHaveBeenCalledWith('emp-001', 'annual', expect.any(String), null, null)
   })
 
   it('admin can query another employee balance', async () => {
@@ -124,7 +124,7 @@ describe('GET /api/leave/balance', () => {
 
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
-    expect(mockGetLeaveBalance).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000', 'annual', '2024-06-01', null)
+    expect(mockGetLeaveBalance).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000', 'annual', '2024-06-01', null, null)
   })
 
   it('non-admin cannot query another employee balance', async () => {
@@ -135,7 +135,7 @@ describe('GET /api/leave/balance', () => {
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
     // Should use session employee_id, not the query param
-    expect(mockGetLeaveBalance).toHaveBeenCalledWith('emp-001', expect.any(String), expect.any(String), null)
+    expect(mockGetLeaveBalance).toHaveBeenCalledWith('emp-001', expect.any(String), expect.any(String), null, null)
   })
 
   it('returns 400 for invalid employee_id format', async () => {
