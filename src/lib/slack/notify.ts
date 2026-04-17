@@ -17,7 +17,9 @@ const slack: WebClient | null = process.env.SLACK_BOT_TOKEN
   : null;
 
 const channelId = process.env.SLACK_LEAVE_CHANNEL_ID;
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+// Trim defensively — a stray newline in the env value corrupts the Slack
+// `<url|text>` markup and leaves the review link unrendered.
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").trim();
 
 /**
  * Notify all admins via DM about a new leave request.
