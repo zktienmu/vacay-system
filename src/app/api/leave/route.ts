@@ -1,3 +1,6 @@
+// Allow up to 30s for Slack notifications to approvers (same as approve/reject branch)
+export const maxDuration = 30;
+
 import { NextRequest, NextResponse } from "next/server";
 import { SessionData } from "@/types";
 import { withAuth } from "@/lib/auth/middleware";
@@ -287,9 +290,14 @@ export const POST = withAuth(
         ip_address: getClientIp(req),
       }).catch((err) => console.error("[AuditLog] Failed:", err));
 
-      // Fire-and-forget: notify admins via Slack (skip for backfill)
+      // Await integrations BEFORE returning response — Vercel kills the function
+      // after response is sent, so fire-and-forget drops Slack notifications.
       if (!isAdminBackfill) {
-        onLeaveRequestCreated(leaveRequest).catch(() => {});
+        try {
+          await onLeaveRequestCreated(leaveRequest);
+        } catch (err) {
+          console.error("[Integration] onLeaveRequestCreated failed:", err);
+        }
       }
 
       return NextResponse.json(

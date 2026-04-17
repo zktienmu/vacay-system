@@ -62,9 +62,8 @@ export async function GET(
     const monthStartStr = format(monthStart, "yyyy-MM-dd");
     const monthEndStr = format(monthEnd, "yyyy-MM-dd");
 
-    // Fetch approved leave requests that overlap with the month,
-    // scoped by role: admins see all, managers see own department, employees see own.
-    let query = supabase
+    // All signed-in employees see all approved leaves on the calendar.
+    const { data: requests, error } = await supabase
       .from("leave_requests")
       .select(
         `
@@ -81,9 +80,6 @@ export async function GET(
       .eq("status", "approved")
       .lte("start_date", monthEndStr)
       .gte("end_date", monthStartStr);
-
-    // All employees can see all approved leaves on the calendar
-    const { data: requests, error } = await query;
 
     if (error) {
       return NextResponse.json(

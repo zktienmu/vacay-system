@@ -110,7 +110,7 @@ export function withAuth(handler: AuthHandler) {
 
 export function withAdmin(handler: AuthHandler) {
   return withAuth(async (req, ctx, session) => {
-    if (session.role !== "admin" && !session.is_manager) {
+    if (session.role !== "admin") {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 },
